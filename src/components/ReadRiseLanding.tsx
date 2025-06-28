@@ -4,9 +4,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, Timer, Trophy, TrendingUp, Users, Zap, Star, ArrowRight, Play } from 'lucide-react';
 
+import { AuthModal } from "@/components/AuthModal";
+
 const ReadRiseLanding = () => {
   const [scrollY, setScrollY] = useState(0);
   const [currentFeature, setCurrentFeature] = useState(0);
+  const [showLogin, setShowLogin] = useState(false);
+  const [showSignup, setShowSignup] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -72,11 +76,17 @@ const ReadRiseLanding = () => {
             <a href="#features" className="text-gray-300 hover:text-white transition-colors">Features</a>
             <a href="#how-it-works" className="text-gray-300 hover:text-white transition-colors">How it Works</a>
             <a href="#testimonials" className="text-gray-300 hover:text-white transition-colors">Reviews</a>
-            <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
-              Get Started
+            <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700" onClick={() => setShowLogin(true)}>
+              Login
+            </Button>
+            <Button variant="outline" className="border-purple-500/50 text-purple-300 hover:bg-purple-500/10" onClick={() => setShowSignup(true)}>
+              Sign Up
             </Button>
           </div>
         </nav>
+        {/* Auth Modals */}
+        <AuthModal open={showLogin} onClose={() => setShowLogin(false)} mode="login" />
+        <AuthModal open={showSignup} onClose={() => setShowSignup(false)} mode="signup" />
       </header>
 
       {/* Hero Section */}

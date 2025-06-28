@@ -1,8 +1,44 @@
-import ReadRiseLanding from './components/ReadRiseLanding'
-import './App.css'
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import ReadRiseLanding from './components/ReadRiseLanding';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import './App.css';
 
-function App() {
-  return <ReadRiseLanding />
+import Dashboard from './components/Dashboard';
+import BookSearch from './components/BookSearch';
+import BookLibrary from './components/BookLibrary';
+
+function AppRoutes() {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  return (
+    <Routes>
+      <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <ReadRiseLanding />} />
+      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/search" element={
+            <ProtectedRoute>
+              <BookSearch />
+            </ProtectedRoute>
+          } />
+          <Route path="/library" element={
+            <ProtectedRoute>
+              <BookLibrary />
+            </ProtectedRoute>
+          } />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
 }
 
-export default App
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <AppRoutes />
+      </Router>
+    </AuthProvider>
+  );
+}
+
+export default App;
