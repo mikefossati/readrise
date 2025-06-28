@@ -108,17 +108,27 @@ export async function startSession(session: Omit<ReadingSession, 'id' | 'end_tim
   }
 }
 
-export async function endSession(sessionId: string, end_time: string, actual_duration: number, completed: boolean): Promise<{ data: ReadingSession | null, error: string | null, loading: boolean }> {
+export async function endSession(
+  sessionId: string,
+  end_time: string,
+  actual_duration: number,
+  completed: boolean,
+  mood?: string,
+  notes?: string
+): Promise<{ data: ReadingSession | null, error: string | null, loading: boolean }> {
   try {
+    const updateObj: any = { end_time, actual_duration, completed };
+    if (mood !== undefined) updateObj.mood = mood;
+    if (notes !== undefined) updateObj.notes = notes;
     const { data, error } = await supabase
       .from('reading_sessions')
-      .update({ end_time, actual_duration, completed })
+      .update(updateObj)
       .eq('id', sessionId)
       .select()
-      .single()
-    return { data, error: error?.message ?? null, loading: false }
+      .single();
+    return { data, error: error?.message ?? null, loading: false };
   } catch (error: any) {
-    return { data: null, error: error.message, loading: false }
+    return { data: null, error: error.message, loading: false };
   }
 }
 

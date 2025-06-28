@@ -5,6 +5,7 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { useAuth } from '../context/AuthContext';
 import { BookOpen, Loader2, Search as SearchIcon, CheckCircle, ChevronDown, ChevronUp, Plus } from 'lucide-react';
+import { StarRating } from './StarRating';
 import type { Book } from '../lib/supabase';
 
 const STATUS_TABS = [
@@ -30,6 +31,7 @@ function getStatusLabel(status: Book['reading_status']) {
 }
 
 const BookLibrary: React.FC = () => {
+  const [ratingLoading, setRatingLoading] = useState<{[id:string]:boolean}>({});
   const { user } = useAuth();
   const [books, setBooks] = useState<Book[]>([]);
   const [filtered, setFiltered] = useState<Book[]>([]);
@@ -84,6 +86,18 @@ const BookLibrary: React.FC = () => {
     } catch (e) {
       setError('Failed to update status.');
     }
+  };
+
+  const handleRatingChange = async (bookId: string, rating: number) => {
+    setRatingLoading(r => ({ ...r, [bookId]: true }));
+    setBooks(bs => bs.map(b => b.id === bookId ? { ...b, rating } : b));
+    try {
+      const mod = await import('../lib/supabase');
+      await mod.updateBookRating(bookId, rating);
+    } catch (e) {
+      setError('Failed to update rating.');
+    }
+    setRatingLoading(r => ({ ...r, [bookId]: false }));
   };
 
   return (
@@ -150,13 +164,24 @@ const BookLibrary: React.FC = () => {
                     )}
                   </div>
                   <div className="ml-2 flex-1">
-                    <CardTitle className="text-base font-semibold line-clamp-2 text-white">
-                      {book.title}
-                    </CardTitle>
-                    <div className="text-xs text-purple-300 font-medium line-clamp-1">
-                      {book.author}
-                    </div>
-                  </div>
+  <CardTitle className="text-base font-semibold line-clamp-2 text-white">
+    {book.title}
+  </CardTitle>
+  <div className="text-xs text-purple-300 font-medium line-clamp-1">
+    {book.author}
+  </div>
+  <div className="mt-1">
+    <StarRating
+  value={typeof book.rating === 'number' ? book.rating : 0}
+  onChange={rating => handleRatingChange(book.id, rating)}
+  disabled={ratingLoading[book.id]}
+  size={22}
+/>
+    {ratingLoading[book.id] && (
+      <span className="ml-2 text-xs text-gray-400 animate-pulse">Saving...</span>
+    )}
+  </div>
+</div>
                 </CardHeader>
                 <CardContent className="flex items-center justify-between pt-2">
                   <div className="relative">

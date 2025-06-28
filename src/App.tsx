@@ -8,6 +8,7 @@ import './App.css';
 import Dashboard from './components/Dashboard';
 import BookSearch from './components/BookSearch';
 import BookLibrary from './components/BookLibrary';
+import ReadingTimer from './components/ReadingTimer';
 
 function AppRoutes() {
   const { user, loading } = useAuth();
@@ -24,6 +25,11 @@ function AppRoutes() {
           <Route path="/library" element={
             <ProtectedRoute>
               <BookLibrary />
+            </ProtectedRoute>
+          } />
+          <Route path="/timer" element={
+            <ProtectedRoute>
+              <ReadingTimer />
             </ProtectedRoute>
           } />
       <Route path="*" element={<Navigate to="/" replace />} />
