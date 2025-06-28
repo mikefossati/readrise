@@ -1,0 +1,215 @@
+1. File Structure
+Can you show me your current project structure? Run this in your terminal:
+bashtree -I node_modules
+# or if tree isn't available:
+ls -la src/
+ls -la src/components/
+
+--- Output ---
+zsh: command not found: bashtree
+total 40
+drwxr-xr-x@ 10 mike  staff   320 Jun 28 16:32 .
+drwxr-xr-x@ 19 mike  staff   608 Jun 28 16:53 ..
+-rw-r--r--@  1 mike  staff   606 Jun 28 16:21 App.css
+-rw-r--r--@  1 mike  staff   146 Jun 28 16:37 App.tsx
+drwxr-xr-x@  3 mike  staff    96 Jun 28 16:21 assets
+drwxr-xr-x@  4 mike  staff   128 Jun 28 16:35 components
+-rw-r--r--@  1 mike  staff  1553 Jun 28 16:37 index.css
+drwxr-xr-x@  3 mike  staff    96 Jun 28 16:31 lib
+-rw-r--r--@  1 mike  staff   230 Jun 28 16:21 main.tsx
+-rw-r--r--@  1 mike  staff    38 Jun 28 16:21 vite-env.d.ts
+total 32
+drwxr-xr-x@  4 mike  staff    128 Jun 28 16:35 .
+drwxr-xr-x@ 10 mike  staff    320 Jun 28 16:32 ..
+-rw-r--r--@  1 mike  staff  16237 Jun 28 16:38 ReadRiseLanding.tsx
+drwxr-xr-x@  5 mike  staff    160 Jun 28 16:33 ui
+
+2. Key Configuration Files
+Please share the contents of these files:
+package.json (dependencies section):
+bashcat package.json
+
+--- Output (dependencies section) ---
+{
+  "dependencies": {
+    "@radix-ui/react-slot": "^1.2.3",
+    "@tailwindcss/vite": "^4.1.11",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.525.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "tailwind-merge": "^3.3.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.29.0",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.5.2",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^9.29.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.2.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.11",
+    "tw-animate-css": "^1.3.4",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.34.1",
+    "vite": "^7.0.0"
+  }
+}
+tailwind.config.js:
+bashcat tailwind.config.js
+
+--- Output ---
+/** @type {import('tailwindcss').Config} */
+export default {
+    darkMode: ["class"],
+    content: [
+      "./pages/**/*.{ts,tsx}",
+      "./components/**/*.{ts,tsx}",
+      "./app/**/*.{ts,tsx}",
+      "./src/**/*.{ts,tsx}",
+    ],
+    prefix: "",
+    theme: {
+      container: {
+        center: true,
+        padding: "2rem",
+        screens: {
+          "2xl": "1400px",
+        },
+      },
+      extend: {
+        colors: {
+          border: "hsl(var(--border))",
+          input: "hsl(var(--input))",
+          ring: "hsl(var(--ring))",
+          background: "hsl(var(--background))",
+          foreground: "hsl(var(--foreground))",
+          primary: {
+            DEFAULT: "hsl(var(--primary))",
+            foreground: "hsl(var(--primary-foreground))",
+          },
+          secondary: {
+            DEFAULT: "hsl(var(--secondary))",
+            foreground: "hsl(var(--secondary-foreground))",
+          },
+          destructive: {
+            DEFAULT: "hsl(var(--destructive))",
+            foreground: "hsl(var(--destructive-foreground))",
+          },
+          muted: {
+            DEFAULT: "hsl(var(--muted))",
+            foreground: "hsl(var(--muted-foreground))",
+          },
+          accent: {
+            DEFAULT: "hsl(var(--accent))",
+            foreground: "hsl(var(--accent-foreground))",
+          },
+          popover: {
+            DEFAULT: "hsl(var(--popover))",
+            foreground: "hsl(var(--popover-foreground))",
+          },
+          card: {
+            DEFAULT: "hsl(var(--card))",
+            foreground: "hsl(var(--card-foreground))",
+          },
+        },
+        borderRadius: {
+          lg: "var(--radius)",
+          md: "calc(var(--radius) - 2px)",
+          sm: "calc(var(--radius) - 4px)",
+        },
+        keyframes: {
+          "accordion-down": {
+            from: { height: "0" },
+            to: { height: "var(--radix-accordion-content-height)" },
+          },
+          "accordion-up": {
+            from: { height: "var(--radix-accordion-content-height)" },
+            to: { height: "0" },
+          },
+        },
+        animation: {
+          "accordion-down": "accordion-down 0.2s ease-out",
+          "accordion-up": "accordion-up 0.2s ease-out",
+        },
+      },
+    },
+    plugins: [require("tailwindcss-animate")],
+  }
+src/main.tsx:
+bashcat src/main.tsx
+
+--- Output ---
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './index.css'
+import App from './App.tsx'
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+src/index.css (first 20 lines):
+bashhead -20 src/index.css
+
+--- Output ---
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+3. Console Errors
+
+Open DevTools (F12) in your browser
+Check the Console tab for any red errors
+Check the Network tab to see if CSS files are loading
+Screenshot or copy any error messages
+
+4. What You're Seeing
+Describe what the page looks like:
+
+ Completely unstyled (default browser styling)
+ Some styling but not the gradients/animations
+ White background instead of dark theme
+ Components visible but wrong layout
+
+5. Installation Steps
+Which of these commands did you run?
+
+ npm install
+ npx shadcn-ui@latest init
+ npx shadcn-ui@latest add button card badge
+ Any error messages during installation?
+
+🚨 Most Common Issues:
+Quick Check #1: Tailwind Import
+Is this line at the top of your src/index.css?
+css@tailwind base;
+@tailwind components;
+@tailwind utilities;
+Quick Check #2: CSS Import
+Is this line in your src/main.tsx?
+typescriptimport './index.css'
+Quick Check #3: Component Import
+What does your src/App.tsx look like?
