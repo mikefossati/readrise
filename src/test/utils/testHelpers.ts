@@ -1,5 +1,6 @@
-import { faker } from '@faker-js/faker';
-import { createReadingSession, createAchievement, createUserAchievement, createBook } from './factories';
+/// <reference types="vitest" />
+
+import { createReadingSession } from './factories';
 import * as supabase from '../../lib/supabase';
 import { vi } from 'vitest';
 
@@ -35,6 +36,7 @@ export function resetAllMocks() {
     supabaseMocks.resetSupabaseMocks();
   } catch {}
 }
+
 
 /**
  * DRY helper for mocking all required Supabase functions for achievementService tests.

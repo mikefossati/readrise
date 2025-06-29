@@ -1,6 +1,5 @@
 // --- CRITICAL: MOCK SUPABASE MODULE ---
 import { vi } from 'vitest';
-import type { Mock } from 'vitest';
 import * as supabase from '../../lib/supabase';
 
 vi.mock('../../lib/supabase', async () => {
@@ -16,6 +15,7 @@ vi.mock('../../lib/supabase', async () => {
     getRecentSessions: vi.fn(),
   };
 });
+
 
 import * as achievementService from '../achievementService';
 import { createReadingSession, createAchievement, createUserAchievement, createBook } from '../../test/utils/factories';

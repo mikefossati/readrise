@@ -10,6 +10,8 @@ import BookSearch from './components/BookSearch';
 import BookLibrary from './components/BookLibrary';
 import ReadingTimer from './components/ReadingTimer';
 
+const AchievementsLazy = React.lazy(() => import('./pages/achievements'));
+
 function AppRoutes() {
   const { user, loading } = useAuth();
   if (loading) return <div className="flex items-center justify-center h-screen">Loading...</div>;
@@ -17,6 +19,13 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <ReadRiseLanding />} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/achievements" element={
+        <ProtectedRoute>
+          <React.Suspense fallback={<div className="flex items-center justify-center h-screen">Loading Achievements...</div>}>
+            <AchievementsLazy />
+          </React.Suspense>
+        </ProtectedRoute>
+      } />
       <Route path="/search" element={
             <ProtectedRoute>
               <BookSearch />

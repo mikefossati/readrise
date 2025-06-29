@@ -18,6 +18,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from './layout/AppLayout';
+import DashboardAchievementsWidget from './achievements/DashboardAchievementsWidget';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -144,6 +145,13 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Achievements Dashboard Widget */}
+      {user?.id && (
+        <div className="mb-8 flex justify-center">
+          <DashboardAchievementsWidget userId={user.id} />
+        </div>
+      )}
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
