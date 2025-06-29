@@ -1,4 +1,5 @@
 import React from 'react';
+import * as dashboardService from '../services/dashboardService';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
@@ -51,38 +52,12 @@ const Dashboard = () => {
       import('../lib/supabase').then(m => m.supabase.from('reading_sessions').select('*').eq('user_id', user.id)),
     ]).then(async ([booksRes, sessionsRes]) => {
       books = booksRes.data || [];
-      setTotalBooks(books.length);
-      setBooksThisMonth(books.filter(b => b.created_at && b.created_at >= monthStartISO).length);
       sessions = (sessionsRes.data as any[]) || [];
-      
-      // Calculate today's reading minutes
-      const todaySessions = sessions.filter(s => s.start_time >= todayISO && s.start_time < tomorrowISO);
-      let minutes = 0;
-      todaySessions.forEach(s => {
-        if (s.actual_duration != null) {
-          minutes += Math.round(s.actual_duration / 60);
-        } else if (s.start_time && s.end_time) {
-          minutes += Math.round((new Date(s.end_time).getTime() - new Date(s.start_time).getTime()) / 60000);
-        }
-      });
-      setTodayMinutes(minutes);
-      
-      // Calculate streak
-      const dates = Array.from(new Set(sessions.map(s => s.start_time.substr(0,10)))).sort().reverse();
-      let streak = 0;
-      let d = new Date();
-      for (let i = 0; i < dates.length; i++) {
-        const date = new Date(dates[i]);
-        date.setHours(0,0,0,0);
-        if (i === 0 && date.getTime() !== today.getTime()) break;
-        if (date.getTime() === d.getTime()) {
-          streak++;
-          d.setDate(d.getDate() - 1);
-        } else {
-          break;
-        }
-      }
-      setCurrentStreak(streak);
+      const now = new Date();
+      setTotalBooks(dashboardService.getTotalBooks(books));
+      setBooksThisMonth(dashboardService.getBooksThisMonth(books, now));
+      setTodayMinutes(dashboardService.getTodayMinutes(sessions, now));
+      setCurrentStreak(dashboardService.getCurrentStreak(sessions, now));
       setLoading(false);
     });
   }, [user]);
