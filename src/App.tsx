@@ -6,6 +6,9 @@ import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
 import Dashboard from './components/Dashboard';
+
+const TimerTestPageRouteLazy = React.lazy(() => import('./pages/TimerTestPageRoute'));
+
 import BookSearch from './components/BookSearch';
 import BookLibrary from './components/BookLibrary';
 import ReadingTimer from './components/ReadingTimer';
@@ -41,6 +44,7 @@ function AppRoutes() {
               <ReadingTimer />
             </ProtectedRoute>
           } />
+      <Route path="/test-timer" element={<React.Suspense fallback={<div>Loading...</div>}><TimerTestPageRouteLazy /></React.Suspense>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
