@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AppLayout from './layout/AppLayout';
 import { SessionCompleteModal } from './SessionCompleteModal';
 import { Button } from './ui/button';
@@ -6,18 +7,10 @@ import { Card } from './ui/card';
 import { useAuth } from '../context/AuthContext';
 import type { Book } from '../lib/supabase';
 import { Loader2, BookOpen } from 'lucide-react';
+import * as achievementService from '../services/achievementService';
 
-// Types for reading session
-interface ReadingSession {
-  id: string;
-  user_id: string;
-  book_id: string;
-  start_time: string;
-  end_time: string | null;
-  planned_duration: number | null;
-  actual_duration: number | null;
-  session_type: 'focused' | 'open';
-}
+// Use the canonical ReadingSession type from supabase
+import type { ReadingSession } from '../lib/supabase';
 
 const PRESETS = [15, 25, 45, 60, 90, 120];
 const MINUTES_MIN = 1;
@@ -40,9 +33,16 @@ const ReadingTimer: React.FC = () => {
   const [mood, setMood] = useState('');
   const [notes, setNotes] = useState('');
   const [showConfetti, setShowConfetti] = useState(false);
-  const [audioEnabled, setAudioEnabled] = useState(true);
   const [achievement, setAchievement] = useState<string | undefined>(undefined);
-  const audioRef = React.useRef<HTMLAudioElement>(null);
+  const [pagesRead, setPagesRead] = useState<number | ''>('');
+  const [pauseCount, setPauseCount] = useState(0);
+  const [hasResumed, setHasResumed] = useState(false);
+  const [recentSessions, setRecentSessions] = useState<any[]>([]);
+  const [streakDay, setStreakDay] = useState<number | null>(null);
+  const [nextMilestoneMinutes, setNextMilestoneMinutes] = useState<number | null>(null);
+  const [bestSession, setBestSession] = useState<boolean>(false);
+  const [todayTotalMinutes, setTodayTotalMinutes] = useState<number>(0);
+  const navigate = useNavigate();
 
   const { user } = useAuth();
   const [books, setBooks] = useState<Book[]>([]);
@@ -58,15 +58,78 @@ const ReadingTimer: React.FC = () => {
   const [sessionLoading, setSessionLoading] = useState(false);
   const [todayTotal, setTodayTotal] = useState<number>(0);
 
-  // Fetch books with reading_status='currently_reading'
+  // Focus quality logic
+  const focusQuality = pauseCount === 0 ? 'perfect' : hasResumed ? 'resumed' : 'paused';
+
+  // Fetch recent sessions for streak/milestone/best logic
+  useEffect(() => {
+    if (!user?.id) return;
+    import('../lib/supabase').then(m => m.getRecentSessions(user.id, 30)).then(res => {
+      if (res.data) setRecentSessions(res.data);
+    });
+  }, [user, timerState]);
+
+  // Compute streak
+  useEffect(() => {
+    if (!recentSessions.length) return;
+    const today = getTodayDateStr();
+    let streak = 0;
+    let cur = new Date(today);
+    for (let i = 0; i < recentSessions.length; i++) {
+      const d = recentSessions[i].start_time.slice(0, 10);
+      if (d === cur.toISOString().slice(0, 10)) {
+        streak++;
+        cur.setDate(cur.getDate() - 1);
+      } else if (i === 0 && d < today) {
+        break;
+      }
+    }
+    setStreakDay(streak > 0 ? streak : null);
+  }, [recentSessions]);
+
+  // Compute next milestone
+  useEffect(() => {
+    const mins = Math.floor((todayTotal + (session?.actual_duration || 0)) / 60);
+    const next = Math.ceil(mins / 100) * 100;
+    setNextMilestoneMinutes(next > mins ? next - mins : null);
+    setTodayTotalMinutes(mins);
+  }, [todayTotal, session]);
+
+  // Compute best session
+  useEffect(() => {
+    if (!session?.actual_duration) return setBestSession(false);
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const thisWeek = recentSessions.filter(s => new Date(s.start_time) > weekAgo);
+    const max = Math.max(...thisWeek.map(s => s.actual_duration || 0), 0);
+    setBestSession(session.actual_duration >= max && max > 0);
+  }, [session, recentSessions]);
+
+  // Track pause/resume for focus quality
+  useEffect(() => {
+    if (timerState === 'paused') setPauseCount(c => c + 1);
+    if (timerState === 'running' && pauseCount > 0) setHasResumed(true);
+    if (timerState === 'idle' || timerState === 'finished') {
+      setPauseCount(0);
+      setHasResumed(false);
+    }
+  }, [timerState]);
+
+  // Fetch all books, sort so 'currently_reading' appear first
   useEffect(() => {
     if (!user?.id) return;
     setLoadingBooks(true);
     import('../lib/supabase').then(m => m.getBooks(user.id)).then(res => {
       if (res.error) setError(res.error);
-      const crBooks = (res.data || []).filter(b => b.reading_status === 'currently_reading');
-      setBooks(crBooks);
-      setSelectedBook(crBooks[0]?.id || '');
+      const allBooks = res.data || [];
+      // Sort: 'currently_reading' first, then others alphabetically
+      allBooks.sort((a, b) => {
+        if (a.reading_status === 'currently_reading' && b.reading_status !== 'currently_reading') return -1;
+        if (a.reading_status !== 'currently_reading' && b.reading_status === 'currently_reading') return 1;
+        return (a.title || '').localeCompare(b.title || '');
+      });
+      setBooks(allBooks);
+      setSelectedBook(allBooks[0]?.id || '');
       setLoadingBooks(false);
     });
   }, [user]);
@@ -135,30 +198,31 @@ const ReadingTimer: React.FC = () => {
     };
   }, [timerState, duration]);
 
-  // Show modal when finished
+  // Show modal and check achievements when finished
   useEffect(() => {
-    if (timerState === 'finished' && session) {
-      setModalOpen(true);
-      setShowConfetti(true);
-      // Play audio if enabled
-      if (audioEnabled && audioRef.current) {
-        audioRef.current.currentTime = 0;
-        audioRef.current.play();
-      }
-      // Achievement logic (simple demo)
-      if (!localStorage.getItem('firstSessionComplete')) {
-        setAchievement('First session complete!');
-        localStorage.setItem('firstSessionComplete', '1');
-      } else if ((session.actual_duration ?? 0) >= 1800) {
-        setAchievement('30+ minute session!');
+    const checkAchievements = async () => {
+      if (timerState === 'finished' && session && user?.id) {
+        setModalOpen(true);
+        setShowConfetti(true);
+        // Check and display unlocked achievements
+        try {
+          const unlocked = await achievementService.checkAllAchievements(user.id, session);
+          if (unlocked && unlocked.length > 0) {
+            // Show the most recent achievement title (can be improved for multiple)
+            setAchievement(unlocked[0].achievement?.title || 'Achievement unlocked!');
+          } else {
+            setAchievement(undefined);
+          }
+        } catch (e) {
+          setAchievement(undefined);
+        }
       } else {
-        setAchievement(undefined);
+        setModalOpen(false);
+        setShowConfetti(false);
       }
-    } else {
-      setModalOpen(false);
-      setShowConfetti(false);
-    }
-  }, [timerState, session, audioEnabled]);
+    };
+    checkAchievements();
+  }, [timerState, session, user]);
 
   const handleStart = async () => {
     if (!selectedBook || !user?.id) return;
@@ -239,9 +303,6 @@ const ReadingTimer: React.FC = () => {
     await handleModalClose();
     handleReset();
   };
-  const handleGoLibrary = () => { window.location.href = '/library'; };
-  const handleGoDashboard = () => { window.location.href = '/dashboard'; };
-
 
   // Handle custom duration input
   const handleCustomDuration = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -295,29 +356,31 @@ const ReadingTimer: React.FC = () => {
   const circ = 2 * Math.PI * radius;
   const offset = circ * (1 - progress);
 
-  // Mobile wake lock (placeholder, needs async API)
-  // let wakeLock: any; // Uncomment and use navigator.wakeLock.request('screen') for advanced mobile support
-
   return (
     <AppLayout currentPage="timer">
-      <audio ref={audioRef} src="/session-complete.mp3" preload="auto" />
+
       <SessionCompleteModal
         open={modalOpen}
         bookTitle={books.find(b => b.id === session?.book_id)?.title || ''}
-        plannedMinutes={session?.planned_duration || duration}
-        actualMinutes={Math.round((session?.actual_duration ?? ((duration * 60) - remaining)) / 60)}
+        plannedMinutes={session?.planned_duration || 0}
+        actualMinutes={session?.actual_duration || 0}
         mood={mood}
         notes={notes}
         onMoodChange={setMood}
         onNotesChange={setNotes}
         onStartAnother={handleStartAnother}
-        onGoLibrary={handleGoLibrary}
-        onGoDashboard={handleGoDashboard}
+        onGoLibrary={() => navigate('/library')}
+        onGoDashboard={() => navigate('/dashboard')}
         onClose={handleModalClose}
         achievement={achievement}
         showConfetti={showConfetti}
-        audioEnabled={audioEnabled}
-        onAudioToggle={() => setAudioEnabled(a => !a)}
+        focusQuality={focusQuality}
+        streakDay={streakDay}
+        nextMilestoneMinutes={nextMilestoneMinutes}
+        bestSession={bestSession}
+        pagesRead={pagesRead}
+        onPagesReadChange={setPagesRead}
+        todayTotalMinutes={todayTotalMinutes}
       />
       <div className="max-w-xl mx-auto my-8">
         <Card className="p-6 bg-gradient-to-br from-slate-900/90 to-purple-900/80 border-0 shadow-xl">

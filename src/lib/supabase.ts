@@ -13,7 +13,7 @@ export type Book = {
   total_reading_time: number | null
 }
 
-type ReadingSession = {
+export type ReadingSession = {
   id: string
   user_id: string
   book_id: string
@@ -143,6 +143,129 @@ export async function getRecentSessions(userId: string, limit = 10): Promise<{ d
     return { data, error: error?.message ?? null, loading: false }
   } catch (error: any) {
     return { data: null, error: error.message, loading: false }
+  }
+}
+
+// Achievement & Goal Types
+import type {
+  Achievement,
+  UserAchievement,
+  UserGoal,
+  AchievementProgress
+} from '../types/achievements';
+
+// Achievement Service Functions
+export async function getAchievements(): Promise<{ data: Achievement[] | null, error: string | null, loading: boolean }> {
+  try {
+    const { data, error } = await supabase
+      .from('achievements')
+      .select('*')
+      .eq('is_active', true);
+    return { data, error: error?.message ?? null, loading: false };
+  } catch (error: any) {
+    return { data: null, error: error.message, loading: false };
+  }
+}
+
+export async function getUserAchievements(userId: string): Promise<{ data: UserAchievement[] | null, error: string | null, loading: boolean }> {
+  try {
+    const { data, error } = await supabase
+      .from('user_achievements')
+      .select('*, achievement:achievement_id(*)')
+      .eq('user_id', userId);
+    return { data, error: error?.message ?? null, loading: false };
+  } catch (error: any) {
+    return { data: null, error: error.message, loading: false };
+  }
+}
+
+export async function unlockAchievement(userId: string, achievementId: string): Promise<{ data: UserAchievement | null, error: string | null, loading: boolean }> {
+  try {
+    const { data, error } = await supabase
+      .from('user_achievements')
+      .insert([{ user_id: userId, achievement_id: achievementId }])
+      .select()
+      .single();
+    return { data, error: error?.message ?? null, loading: false };
+  } catch (error: any) {
+    return { data: null, error: error.message, loading: false };
+  }
+}
+
+export async function getAchievementProgress(userId: string): Promise<{ data: AchievementProgress[] | null, error: string | null, loading: boolean }> {
+  try {
+    const { data, error } = await supabase
+      .from('achievement_progress')
+      .select('*')
+      .eq('user_id', userId);
+    return { data, error: error?.message ?? null, loading: false };
+  } catch (error: any) {
+    return { data: null, error: error.message, loading: false };
+  }
+}
+
+export async function updateAchievementProgress(userId: string, achievementKey: string, progress: { current_progress: number, target_progress: number, progress_data?: any }): Promise<{ data: AchievementProgress | null, error: string | null, loading: boolean }> {
+  try {
+    const upsertPayload = {
+      user_id: userId,
+      achievement_key: achievementKey,
+      current_progress: progress.current_progress,
+      target_progress: progress.target_progress,
+      ...(progress.progress_data ? { progress_data: progress.progress_data } : {}),
+      last_updated: new Date().toISOString(),
+    };
+    console.log('[achievement_progress upsert payload]', upsertPayload);
+    const { data, error } = await supabase
+      .from('achievement_progress')
+      .upsert([
+        upsertPayload
+      ], { onConflict: 'user_id,achievement_key' })
+      .select()
+      .single();
+    return { data, error: error?.message ?? null, loading: false };
+  } catch (error: any) {
+    return { data: null, error: error.message, loading: false };
+  }
+}
+
+// Goal Service Functions
+export async function getUserGoals(userId: string): Promise<{ data: UserGoal[] | null, error: string | null, loading: boolean }> {
+  try {
+    const { data, error } = await supabase
+      .from('user_goals')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_active', true);
+    return { data, error: error?.message ?? null, loading: false };
+  } catch (error: any) {
+    return { data: null, error: error.message, loading: false };
+  }
+}
+
+export async function createUserGoal(goalData: Omit<UserGoal, 'id' | 'created_at' | 'updated_at'>): Promise<{ data: UserGoal | null, error: string | null, loading: boolean }> {
+  try {
+    const { data, error } = await supabase
+      .from('user_goals')
+      .insert([{ ...goalData }])
+      .select()
+      .single();
+    return { data, error: error?.message ?? null, loading: false };
+  } catch (error: any) {
+    return { data: null, error: error.message, loading: false };
+  }
+}
+
+export async function updateGoalProgress(goalId: string, newProgress: number): Promise<{ data: UserGoal | null, error: string | null, loading: boolean }> {
+  try {
+    const { data, error } = await supabase
+      .from('user_goals')
+      .update({ current_value: newProgress, updated_at: new Date().toISOString() })
+      .eq('id', goalId)
+      .select()
+      .single();
+    return { data, error: error?.message ?? null, loading: false };
+  } catch (error: any) {
+    return { data: null, error: error.message, loading: false };
   }
 }
 
