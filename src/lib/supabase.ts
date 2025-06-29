@@ -41,70 +41,107 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Book Service Functions
-export async function getBooks(userId: string): Promise<{ data: Book[] | null, error: string | null, loading: boolean }> {
+import type { Result, SupabaseError } from '../types/Result';
+
+export async function getBooks(userId: string): Promise<Result<Book[]>> {
   try {
     const { data, error } = await supabase
       .from('books')
       .select('*')
-      .eq('user_id', userId)
-    return { data, error: error?.message ?? null, loading: false }
+      .eq('user_id', userId);
+    if (error) {
+      const err: SupabaseError = { message: error.message, code: error.code, context: { userId }, from: 'getBooks' };
+      console.error('[SupabaseError]', err);
+      return { ok: false, data: null, error: err };
+    }
+    return { ok: true, data: data ?? [], error: null };
   } catch (error: any) {
-    return { data: null, error: error.message, loading: false }
+    const err: SupabaseError = { message: error.message || 'Unknown error', context: { userId }, from: 'getBooks' };
+    console.error('[SupabaseError]', err);
+    return { ok: false, data: null, error: err };
   }
 }
 
-export async function addBook(book: Omit<Book, 'id'>): Promise<{ data: Book | null, error: string | null, loading: boolean }> {
+export async function addBook(book: Omit<Book, 'id'>): Promise<Result<Book>> {
   try {
     const { data, error } = await supabase
       .from('books')
       .insert([book])
       .select()
-      .single()
-    return { data, error: error?.message ?? null, loading: false }
+      .single();
+    if (error) {
+      const err: SupabaseError = { message: error.message, code: error.code, context: { book }, from: 'addBook' };
+      console.error('[SupabaseError]', err);
+      return { ok: false, data: null, error: err };
+    }
+    return { ok: true, data, error: null };
   } catch (error: any) {
-    return { data: null, error: error.message, loading: false }
+    const err: SupabaseError = { message: error.message || 'Unknown error', context: { book }, from: 'addBook' };
+    console.error('[SupabaseError]', err);
+    return { ok: false, data: null, error: err };
   }
 }
 
-export async function updateBookStatus(bookId: string, reading_status: Book['reading_status']): Promise<{ data: Book | null, error: string | null, loading: boolean }> {
+export async function updateBookStatus(bookId: string, reading_status: Book['reading_status']): Promise<Result<Book>> {
   try {
     const { data, error } = await supabase
       .from('books')
       .update({ reading_status })
       .eq('id', bookId)
       .select()
-      .single()
-    return { data, error: error?.message ?? null, loading: false }
+      .single();
+    if (error) {
+      const err: SupabaseError = { message: error.message, code: error.code, context: { bookId, reading_status }, from: 'updateBookStatus' };
+      console.error('[SupabaseError]', err);
+      return { ok: false, data: null, error: err };
+    }
+    return { ok: true, data, error: null };
   } catch (error: any) {
-    return { data: null, error: error.message, loading: false }
+    const err: SupabaseError = { message: error.message || 'Unknown error', context: { bookId, reading_status }, from: 'updateBookStatus' };
+    console.error('[SupabaseError]', err);
+    return { ok: false, data: null, error: err };
   }
 }
 
-export async function updateBookRating(bookId: string, rating: number): Promise<{ data: Book | null, error: string | null, loading: boolean }> {
+export async function updateBookRating(bookId: string, rating: number): Promise<Result<Book>> {
   try {
     const { data, error } = await supabase
       .from('books')
       .update({ rating })
       .eq('id', bookId)
       .select()
-      .single()
-    return { data, error: error?.message ?? null, loading: false }
+      .single();
+    if (error) {
+      const err: SupabaseError = { message: error.message, code: error.code, context: { bookId, rating }, from: 'updateBookRating' };
+      console.error('[SupabaseError]', err);
+      return { ok: false, data: null, error: err };
+    }
+    return { ok: true, data, error: null };
   } catch (error: any) {
-    return { data: null, error: error.message, loading: false }
+    const err: SupabaseError = { message: error.message || 'Unknown error', context: { bookId, rating }, from: 'updateBookRating' };
+    console.error('[SupabaseError]', err);
+    return { ok: false, data: null, error: err };
   }
 }
 
 // Reading Session Functions
-export async function startSession(session: Omit<ReadingSession, 'id' | 'end_time' | 'actual_duration' | 'completed'>): Promise<{ data: ReadingSession | null, error: string | null, loading: boolean }> {
+export async function startSession(session: Omit<ReadingSession, 'id' | 'end_time' | 'actual_duration' | 'completed'>): Promise<Result<ReadingSession>> {
   try {
     const { data, error } = await supabase
       .from('reading_sessions')
       .insert([{ ...session, end_time: null, actual_duration: null, completed: false }])
       .select()
-      .single()
-    return { data, error: error?.message ?? null, loading: false }
+      .single();
+    if (error) {
+      const err: SupabaseError = { message: error.message, code: error.code, context: { session }, from: 'startSession' };
+      console.error('[SupabaseError]', err);
+      return { ok: false, data: null, error: err };
+    }
+    return { ok: true, data, error: null };
   } catch (error: any) {
-    return { data: null, error: error.message, loading: false }
+    const err: SupabaseError = { message: error.message || 'Unknown error', context: { session }, from: 'startSession' };
+    console.error('[SupabaseError]', err);
+    return { ok: false, data: null, error: err };
   }
 }
 
@@ -115,7 +152,7 @@ export async function endSession(
   completed: boolean,
   mood?: string,
   notes?: string
-): Promise<{ data: ReadingSession | null, error: string | null, loading: boolean }> {
+): Promise<Result<ReadingSession>> {
   try {
     const updateObj: any = { end_time, actual_duration, completed };
     if (mood !== undefined) updateObj.mood = mood;
@@ -126,23 +163,37 @@ export async function endSession(
       .eq('id', sessionId)
       .select()
       .single();
-    return { data, error: error?.message ?? null, loading: false };
+    if (error) {
+      const err: SupabaseError = { message: error.message, code: error.code, context: { sessionId, end_time, actual_duration, completed, mood, notes }, from: 'endSession' };
+      console.error('[SupabaseError]', err);
+      return { ok: false, data: null, error: err };
+    }
+    return { ok: true, data, error: null };
   } catch (error: any) {
-    return { data: null, error: error.message, loading: false };
+    const err: SupabaseError = { message: error.message || 'Unknown error', context: { sessionId, end_time, actual_duration, completed, mood, notes }, from: 'endSession' };
+    console.error('[SupabaseError]', err);
+    return { ok: false, data: null, error: err };
   }
 }
 
-export async function getRecentSessions(userId: string, limit = 10): Promise<{ data: ReadingSession[] | null, error: string | null, loading: boolean }> {
+export async function getRecentSessions(userId: string, limit = 10): Promise<Result<ReadingSession[]>> {
   try {
     const { data, error } = await supabase
       .from('reading_sessions')
       .select('*')
       .eq('user_id', userId)
       .order('start_time', { ascending: false })
-      .limit(limit)
-    return { data, error: error?.message ?? null, loading: false }
+      .limit(limit);
+    if (error) {
+      const err: SupabaseError = { message: error.message, code: error.code, context: { userId, limit }, from: 'getRecentSessions' };
+      console.error('[SupabaseError]', err);
+      return { ok: false, data: null, error: err };
+    }
+    return { ok: true, data: data ?? [], error: null };
   } catch (error: any) {
-    return { data: null, error: error.message, loading: false }
+    const err: SupabaseError = { message: error.message || 'Unknown error', context: { userId, limit }, from: 'getRecentSessions' };
+    console.error('[SupabaseError]', err);
+    return { ok: false, data: null, error: err };
   }
 }
 
@@ -155,56 +206,84 @@ import type {
 } from '../types/achievements';
 
 // Achievement Service Functions
-export async function getAchievements(): Promise<{ data: Achievement[] | null, error: string | null, loading: boolean }> {
+export async function getAchievements(): Promise<Result<Achievement[]>> {
   try {
     const { data, error } = await supabase
       .from('achievements')
       .select('*')
       .eq('is_active', true);
-    return { data, error: error?.message ?? null, loading: false };
+    if (error) {
+      const err: SupabaseError = { message: error.message, code: error.code, from: 'getAchievements' };
+      console.error('[SupabaseError]', err);
+      return { ok: false, data: null, error: err };
+    }
+    return { ok: true, data: data ?? [], error: null };
   } catch (error: any) {
-    return { data: null, error: error.message, loading: false };
+    const err: SupabaseError = { message: error.message || 'Unknown error', from: 'getAchievements' };
+    console.error('[SupabaseError]', err);
+    return { ok: false, data: null, error: err };
   }
 }
 
-export async function getUserAchievements(userId: string): Promise<{ data: UserAchievement[] | null, error: string | null, loading: boolean }> {
+export async function getUserAchievements(userId: string): Promise<Result<UserAchievement[]>> {
   try {
     const { data, error } = await supabase
       .from('user_achievements')
       .select('*, achievement:achievement_id(*)')
       .eq('user_id', userId);
-    return { data, error: error?.message ?? null, loading: false };
+    if (error) {
+      const err: SupabaseError = { message: error.message, code: error.code, context: { userId }, from: 'getUserAchievements' };
+      console.error('[SupabaseError]', err);
+      return { ok: false, data: null, error: err };
+    }
+    return { ok: true, data: data ?? [], error: null };
   } catch (error: any) {
-    return { data: null, error: error.message, loading: false };
+    const err: SupabaseError = { message: error.message || 'Unknown error', context: { userId }, from: 'getUserAchievements' };
+    console.error('[SupabaseError]', err);
+    return { ok: false, data: null, error: err };
   }
 }
 
-export async function unlockAchievement(userId: string, achievementId: string): Promise<{ data: UserAchievement | null, error: string | null, loading: boolean }> {
+export async function unlockAchievement(userId: string, achievementId: string): Promise<Result<UserAchievement>> {
   try {
     const { data, error } = await supabase
       .from('user_achievements')
       .insert([{ user_id: userId, achievement_id: achievementId }])
       .select()
       .single();
-    return { data, error: error?.message ?? null, loading: false };
+    if (error) {
+      const err: SupabaseError = { message: error.message, code: error.code, context: { userId, achievementId }, from: 'unlockAchievement' };
+      console.error('[SupabaseError]', err);
+      return { ok: false, data: null, error: err };
+    }
+    return { ok: true, data, error: null };
   } catch (error: any) {
-    return { data: null, error: error.message, loading: false };
+    const err: SupabaseError = { message: error.message || 'Unknown error', context: { userId, achievementId }, from: 'unlockAchievement' };
+    console.error('[SupabaseError]', err);
+    return { ok: false, data: null, error: err };
   }
 }
 
-export async function getAchievementProgress(userId: string): Promise<{ data: AchievementProgress[] | null, error: string | null, loading: boolean }> {
+export async function getAchievementProgress(userId: string): Promise<Result<AchievementProgress[]>> {
   try {
     const { data, error } = await supabase
       .from('achievement_progress')
       .select('*')
       .eq('user_id', userId);
-    return { data, error: error?.message ?? null, loading: false };
+    if (error) {
+      const err: SupabaseError = { message: error.message, code: error.code, context: { userId }, from: 'getAchievementProgress' };
+      console.error('[SupabaseError]', err);
+      return { ok: false, data: null, error: err };
+    }
+    return { ok: true, data: data ?? [], error: null };
   } catch (error: any) {
-    return { data: null, error: error.message, loading: false };
+    const err: SupabaseError = { message: error.message || 'Unknown error', context: { userId }, from: 'getAchievementProgress' };
+    console.error('[SupabaseError]', err);
+    return { ok: false, data: null, error: err };
   }
 }
 
-export async function updateAchievementProgress(userId: string, achievementKey: string, progress: { current_progress: number, target_progress: number, progress_data?: any }): Promise<{ data: AchievementProgress | null, error: string | null, loading: boolean }> {
+export async function updateAchievementProgress(userId: string, achievementKey: string, progress: { current_progress: number, target_progress: number, progress_data?: any }): Promise<Result<AchievementProgress>> {
   try {
     const upsertPayload = {
       user_id: userId,
@@ -222,40 +301,61 @@ export async function updateAchievementProgress(userId: string, achievementKey: 
       ], { onConflict: 'user_id,achievement_key' })
       .select()
       .single();
-    return { data, error: error?.message ?? null, loading: false };
+    if (error) {
+      const err: SupabaseError = { message: error.message, code: error.code, context: { userId, achievementKey, progress }, from: 'updateAchievementProgress' };
+      console.error('[SupabaseError]', err);
+      return { ok: false, data: null, error: err };
+    }
+    return { ok: true, data, error: null };
   } catch (error: any) {
-    return { data: null, error: error.message, loading: false };
+    const err: SupabaseError = { message: error.message || 'Unknown error', context: { userId, achievementKey, progress }, from: 'updateAchievementProgress' };
+    console.error('[SupabaseError]', err);
+    return { ok: false, data: null, error: err };
   }
 }
 
 // Goal Service Functions
-export async function getUserGoals(userId: string): Promise<{ data: UserGoal[] | null, error: string | null, loading: boolean }> {
+export async function getUserGoals(userId: string): Promise<Result<UserGoal[]>> {
   try {
     const { data, error } = await supabase
       .from('user_goals')
       .select('*')
       .eq('user_id', userId)
       .eq('is_active', true);
-    return { data, error: error?.message ?? null, loading: false };
+    if (error) {
+      const err: SupabaseError = { message: error.message, code: error.code, context: { userId }, from: 'getUserGoals' };
+      console.error('[SupabaseError]', err);
+      return { ok: false, data: null, error: err };
+    }
+    return { ok: true, data: data ?? [], error: null };
   } catch (error: any) {
-    return { data: null, error: error.message, loading: false };
+    const err: SupabaseError = { message: error.message || 'Unknown error', context: { userId }, from: 'getUserGoals' };
+    console.error('[SupabaseError]', err);
+    return { ok: false, data: null, error: err };
   }
 }
 
-export async function createUserGoal(goalData: Omit<UserGoal, 'id' | 'created_at' | 'updated_at'>): Promise<{ data: UserGoal | null, error: string | null, loading: boolean }> {
+export async function createUserGoal(goalData: Omit<UserGoal, 'id' | 'created_at' | 'updated_at'>): Promise<Result<UserGoal>> {
   try {
     const { data, error } = await supabase
       .from('user_goals')
       .insert([{ ...goalData }])
       .select()
       .single();
-    return { data, error: error?.message ?? null, loading: false };
+    if (error) {
+      const err: SupabaseError = { message: error.message, code: error.code, context: { goalData }, from: 'createUserGoal' };
+      console.error('[SupabaseError]', err);
+      return { ok: false, data: null, error: err };
+    }
+    return { ok: true, data, error: null };
   } catch (error: any) {
-    return { data: null, error: error.message, loading: false };
+    const err: SupabaseError = { message: error.message || 'Unknown error', context: { goalData }, from: 'createUserGoal' };
+    console.error('[SupabaseError]', err);
+    return { ok: false, data: null, error: err };
   }
 }
 
-export async function updateGoalProgress(goalId: string, newProgress: number): Promise<{ data: UserGoal | null, error: string | null, loading: boolean }> {
+export async function updateGoalProgress(goalId: string, newProgress: number): Promise<Result<UserGoal>> {
   try {
     const { data, error } = await supabase
       .from('user_goals')
@@ -263,36 +363,57 @@ export async function updateGoalProgress(goalId: string, newProgress: number): P
       .eq('id', goalId)
       .select()
       .single();
-    return { data, error: error?.message ?? null, loading: false };
+    if (error) {
+      const err: SupabaseError = { message: error.message, code: error.code, context: { goalId, newProgress }, from: 'updateGoalProgress' };
+      console.error('[SupabaseError]', err);
+      return { ok: false, data: null, error: err };
+    }
+    return { ok: true, data, error: null };
   } catch (error: any) {
-    return { data: null, error: error.message, loading: false };
+    const err: SupabaseError = { message: error.message || 'Unknown error', context: { goalId, newProgress }, from: 'updateGoalProgress' };
+    console.error('[SupabaseError]', err);
+    return { ok: false, data: null, error: err };
   }
 }
 
 // Profile Functions
-export async function getProfile(userId: string): Promise<{ data: Profile | null, error: string | null, loading: boolean }> {
+export async function getProfile(userId: string): Promise<Result<Profile>> {
   try {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
-      .single()
-    return { data, error: error?.message ?? null, loading: false }
+      .single();
+    if (error) {
+      const err: SupabaseError = { message: error.message, code: error.code, context: { userId }, from: 'getProfile' };
+      console.error('[SupabaseError]', err);
+      return { ok: false, data: null, error: err };
+    }
+    return { ok: true, data, error: null };
   } catch (error: any) {
-    return { data: null, error: error.message, loading: false }
+    const err: SupabaseError = { message: error.message || 'Unknown error', context: { userId }, from: 'getProfile' };
+    console.error('[SupabaseError]', err);
+    return { ok: false, data: null, error: err };
   }
 }
 
-export async function updateProfile(userId: string, updates: Partial<Profile>): Promise<{ data: Profile | null, error: string | null, loading: boolean }> {
+export async function updateProfile(userId: string, updates: Partial<Profile>): Promise<Result<Profile>> {
   try {
     const { data, error } = await supabase
       .from('profiles')
       .update(updates)
       .eq('id', userId)
       .select()
-      .single()
-    return { data, error: error?.message ?? null, loading: false }
+      .single();
+    if (error) {
+      const err: SupabaseError = { message: error.message, code: error.code, context: { userId, updates }, from: 'updateProfile' };
+      console.error('[SupabaseError]', err);
+      return { ok: false, data: null, error: err };
+    }
+    return { ok: true, data, error: null };
   } catch (error: any) {
-    return { data: null, error: error.message, loading: false }
+    const err: SupabaseError = { message: error.message || 'Unknown error', context: { userId, updates }, from: 'updateProfile' };
+    console.error('[SupabaseError]', err);
+    return { ok: false, data: null, error: err };
   }
 }

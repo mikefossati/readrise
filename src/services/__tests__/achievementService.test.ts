@@ -64,13 +64,13 @@ describe('checkAllAchievements', () => {
     });
 
     // Explicitly mock all required supabase functions to ensure correct return shapes
-    (supabase.getAchievements as vi.Mock).mockResolvedValue({ data: [achievement] });
-    (supabase.getUserAchievements as vi.Mock).mockResolvedValue({ data: [] });
-    (supabase.getAchievementProgress as vi.Mock).mockResolvedValue({ data: [] });
-    (supabase.getRecentSessions as vi.Mock).mockResolvedValue({ data: Array.from({ length: 10 }, () => ({ ...createReadingSession(), completed: true })) });
-    (supabase.getBooks as vi.Mock).mockResolvedValue({ data: [] });
-    (supabase.unlockAchievement as vi.Mock).mockResolvedValue({ data: createUserAchievement(achievement.id, { achievement_id: achievement.id }) });
-    (supabase.updateAchievementProgress as vi.Mock).mockResolvedValue({ data: null });
+    (supabase.getAchievements as vi.Mock).mockResolvedValue({ ok: true, data: [achievement], error: null });
+    (supabase.getUserAchievements as vi.Mock).mockResolvedValue({ ok: true, data: [], error: null });
+    (supabase.getAchievementProgress as vi.Mock).mockResolvedValue({ ok: true, data: [], error: null });
+    (supabase.getRecentSessions as vi.Mock).mockResolvedValue({ ok: true, data: Array.from({ length: 10 }, () => ({ ...createReadingSession(), completed: true })), error: null });
+    (supabase.getBooks as vi.Mock).mockResolvedValue({ ok: true, data: [], error: null });
+    (supabase.unlockAchievement as vi.Mock).mockResolvedValue({ ok: true, data: createUserAchievement(achievement.id, { achievement_id: achievement.id }), error: null });
+    (supabase.updateAchievementProgress as vi.Mock).mockResolvedValue({ ok: true, data: null, error: null });
 
     const unlocked = await achievementService.checkAllAchievements('user-1');
     expect(supabase.unlockAchievement).toHaveBeenCalled();

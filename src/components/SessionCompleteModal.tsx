@@ -36,6 +36,7 @@ const MOODS = [
   { value: 'distracted', label: '😵 Distracted' },
 ];
 
+
 export const SessionCompleteModal: React.FC<SessionCompleteModalProps> = ({
   open,
   bookTitle,

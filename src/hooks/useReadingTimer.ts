@@ -29,7 +29,28 @@ export function useReadingTimer() {
   const sessionManager = useTimerSession({
     onSessionComplete: refreshData,
     onAchievementUnlocked: (achievements) => {
-      setAchievementState({ unlocked: achievements, showConfetti: true });
+      // Map UserAchievement[] to EnrichedAchievement[] (minimal mapping)
+      const enriched = achievements.map((ua) => {
+        const a = ua.achievement;
+        return {
+          ...(a ?? {}),
+          id: a?.id ?? ua.achievement_id,
+          key: a?.key ?? '',
+          title: a?.title ?? '',
+          description: a?.description ?? '',
+          icon: a?.icon ?? '🏆',
+          category: a?.category ?? '',
+          criteria: a?.criteria ?? { type: 'session_count', target: 1 },
+          points: a?.points,
+          tier: a?.tier,
+          is_active: a?.is_active,
+          created_at: a?.created_at ?? '',
+          unlocked: true,
+          unlocked_at: ua.unlocked_at,
+          progress: undefined,
+        };
+      });
+      setAchievementState({ unlocked: enriched, showConfetti: true });
     },
   });
 

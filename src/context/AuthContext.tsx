@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { updateProfile } from '../lib/supabase';
@@ -68,11 +68,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Login failed';
+      if (error) {
+        const errMsg = error.message || 'Login failed';
+        setError(errMsg);
+        captureError(error, { context: 'user_login', email });
+        throw new Error(errMsg);
+      }
+    } catch (err: any) {
+      const errorMessage = err?.message || 'Login failed';
       setError(errorMessage);
-      captureError(err as Error, { context: 'user_login', email });
+      captureError(err, { context: 'user_login', email });
       throw err;
     } finally {
       setLoading(false);
@@ -84,15 +89,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
     try {
       const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error) throw error;
-
-      if (data.user) {
-        await updateProfile(data.user.id, { username: profile?.username || email });
+      if (error) {
+        const errMsg = error.message || 'Signup failed';
+        setError(errMsg);
+        captureError(error, { context: 'user_signup', email });
+        throw new Error(errMsg);
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Signup failed';
+      if (data.user) {
+        const res = await updateProfile(data.user.id, { username: profile?.username || email });
+        if (!res.ok) {
+          setError(res.error?.message || 'Profile update failed');
+          captureError(res.error as Error, { context: 'profile_update', userId: data.user.id });
+          throw new Error(res.error?.message || 'Profile update failed');
+        }
+      }
+    } catch (err: any) {
+      const errorMessage = err?.message || 'Signup failed';
       setError(errorMessage);
-      captureError(err as Error, { context: 'user_signup', email });
+      captureError(err, { context: 'user_signup', email });
       throw err;
     } finally {
       setLoading(false);
@@ -104,10 +118,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
     try {
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Logout failed';
+      if (error) {
+        const errMsg = error.message || 'Logout failed';
+        setError(errMsg);
+        captureError(error, { context: 'user_logout' });
+        throw new Error(errMsg);
+      }
+    } catch (err: any) {
+      const errorMessage = err?.message || 'Logout failed';
       setError(errorMessage);
+      captureError(err, { context: 'user_logout' });
       throw err;
     } finally {
       setLoading(false);
@@ -125,6 +145,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     logout,
     clearError,
   };
+
 
   return (
     <ErrorBoundary

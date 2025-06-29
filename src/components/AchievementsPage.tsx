@@ -28,7 +28,8 @@ const AchievementsPage = () => {
   const [selectedTier, setSelectedTier] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [modalAchievement, setModalAchievement] = useState<any>(null);
+  import type { EnrichedAchievement } from '../hooks/useAchievements';
+  const [modalAchievement, setModalAchievement] = useState<EnrichedAchievement | null>(null);
 
   // Notification state
   const [notifications, setNotifications] = useState<AchievementToast[]>([]);

@@ -55,6 +55,7 @@ export interface GoalProgress {
 
 // Flexible criteria type for different achievement types
 // Discriminated union for all supported achievement criteria types
+// Strict discriminated union for all supported achievement criteria types
 export type AchievementCriteria =
   | { type: 'session_count'; target: number }
   | { type: 'single_session_minutes'; target: number }
@@ -63,5 +64,6 @@ export type AchievementCriteria =
   | { type: 'consecutive_days'; target: number }
   | { type: 'pages_read'; target: number }
   | { type: 'goal_complete'; target: number }
-  | { type: string; target: number; [key: string]: any }; // fallback for custom types
+  // For extensibility, allow custom types with required 'type' and 'target', but recommend extending above for safety
+  | { type: string; target: number; [key: string]: unknown }; // fallback for custom types
 

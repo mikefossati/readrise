@@ -31,10 +31,12 @@ export function useTimerData(): UseTimerDataReturn {
         getRecentSessions(user.id, 100)
       ]);
       if (booksRes.error) {
-        throw new Error(booksRes.error);
+        const err = booksRes.error;
+        throw new Error(typeof err === 'string' ? err : (err && typeof err.message === 'string' ? err.message : 'Failed to fetch books'));
       }
       if (sessionsRes.error) {
-        throw new Error(sessionsRes.error);
+        const err = sessionsRes.error;
+        throw new Error(typeof err === 'string' ? err : (err && typeof err.message === 'string' ? err.message : 'Failed to fetch sessions'));
       }
       // Process books
       const allBooks = booksRes.data || [];
@@ -55,7 +57,7 @@ export function useTimerData(): UseTimerDataReturn {
       const total = todaySessions.reduce((sum, s) => sum + (s.actual_duration || 0), 0);
       setTodayTotal(total);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch data');
+      setError(err instanceof Error ? err.message : (typeof err === 'string' ? err : 'Failed to fetch data'));
     } finally {
       setLoadingBooks(false);
     }
@@ -69,9 +71,12 @@ export function useTimerData(): UseTimerDataReturn {
     setError(null);
     
     getBooks(user.id)
-      .then(res => {
+      .then((res: import('../types/Result').Result<import('../lib/supabase').Book[]>) => {
         if (res.error) {
-          setError(res.error);
+          let msg: string = 'Failed to fetch books';
+          if (typeof res.error === 'string') msg = res.error;
+          else if (typeof res.error === 'object' && res.error && 'message' in res.error && typeof (res.error as any).message === 'string') msg = (res.error as any).message;
+          setError(msg);
         } else {
           const allBooks = res.data || [];
           // Sort: 'currently_reading' first, then others alphabetically

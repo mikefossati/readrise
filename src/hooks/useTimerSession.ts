@@ -1,11 +1,12 @@
 import { useState, useCallback } from "react";
 import { startSession, endSession } from "../lib/supabase";
 import type { ReadingSession } from "../lib/supabase";
+import type { UserAchievement } from "../types/achievements";
 import * as achievementService from "../services/achievementService";
 
 interface UseTimerSessionOptions {
   onSessionComplete?: (session: ReadingSession) => void;
-  onAchievementUnlocked?: (achievements: any[]) => void;
+  onAchievementUnlocked?: (achievements: UserAchievement[]) => void;
 }
 
 interface UseTimerSessionReturn {
@@ -54,7 +55,13 @@ export function useTimerSession(options: UseTimerSessionOptions = {}): UseTimerS
       });
       
       if (res.error) {
-        throw new Error(res.error);
+        const err = res.error;
+        let msg: string = 'Failed to start session';
+        if (err instanceof Error) msg = err.message;
+        else if (typeof err === 'object' && err && 'message' in err && typeof (err as any).message === 'string') msg = (err as any).message;
+        else if (typeof err === 'string') msg = err;
+        setSessionError(msg);
+        throw err;
       }
       
       if (!res.data) {
@@ -64,10 +71,14 @@ export function useTimerSession(options: UseTimerSessionOptions = {}): UseTimerS
       const newSession = res.data;
       setSession(newSession);
       return newSession;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create session';
-      setSessionError(errorMessage);
-      throw error;
+    } catch (err) {
+      let msg: string = 'Failed to start session';
+      if (err instanceof Error) msg = err.message;
+      else if (typeof err === 'object' && err && 'message' in err && typeof (err as any).message === 'string') msg = (err as any).message;
+      else if (typeof err === 'string') msg = err;
+      setSessionError(msg);
+      setSessionLoading(false);
+      throw err;
     } finally {
       setSessionLoading(false);
     }
@@ -111,7 +122,13 @@ export function useTimerSession(options: UseTimerSessionOptions = {}): UseTimerS
       );
       
       if (res.error) {
-        throw new Error(res.error);
+        const err = res.error;
+        let msg: string = 'Failed to complete session';
+        if (err instanceof Error) msg = err.message;
+        else if (typeof err === 'object' && err && 'message' in err && typeof (err as any).message === 'string') msg = (err as any).message;
+        else if (typeof err === 'string') msg = err;
+        setSessionError(msg);
+        throw err;
       }
       
       const completedSession = res.data || session;
@@ -138,8 +155,11 @@ export function useTimerSession(options: UseTimerSessionOptions = {}): UseTimerS
       setSession(null);
       
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to complete session';
-      setSessionError(errorMessage);
+      let msg: string = 'Failed to complete session';
+      if (error instanceof Error) msg = error.message;
+      else if (typeof error === 'object' && error && 'message' in error && typeof (error as any).message === 'string') msg = (error as any).message;
+      else if (typeof error === 'string') msg = error;
+      setSessionError(msg);
       throw error;
     } finally {
       setSessionLoading(false);

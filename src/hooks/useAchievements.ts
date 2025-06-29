@@ -39,7 +39,9 @@ export function useAchievements(userId?: string) {
       getAchievementProgress(userId),
     ]).then(([achRes, userAchRes, progRes]) => {
       if (achRes.error || userAchRes.error || progRes.error) {
-        setError(achRes.error || userAchRes.error || progRes.error || 'Unknown error');
+        // Extract error message safely
+        const err = achRes.error || userAchRes.error || progRes.error;
+        setError(typeof err === 'string' ? err : (err && typeof err.message === 'string' ? err.message : 'Unknown error'));
         setAchievements([]);
         setLoading(false);
         return;

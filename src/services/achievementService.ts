@@ -31,12 +31,15 @@ export async function checkAllAchievements(userId: string, sessionData?: Reading
   console.log('[AchievementService] Starting achievement check for user:', userId);
   
   // Batched fetch for all needed data
+
+  const unlocked: UserAchievement[] = [];
+
+  // Declare variables for use throughout the function
   let achievements: Achievement[] = [];
   let userAchievements: UserAchievement[] = [];
   let progress: AchievementProgress[] = [];
   let sessions: ReadingSession[] = [];
   let books: Book[] = [];
-  const unlocked: UserAchievement[] = [];
 
   try {
     const [achievementsRes, userAchievementsRes, progressRes, sessionsRes, booksRes] = await Promise.all([
@@ -47,16 +50,24 @@ export async function checkAllAchievements(userId: string, sessionData?: Reading
       getBooks(userId),
     ]);
 
-    if (!achievementsRes.data || !userAchievementsRes.data || !progressRes.data || !sessionsRes.data || !booksRes.data) {
-      console.error('[AchievementService] Failed to fetch achievement data - some responses were null');
+    if (!achievementsRes.ok || !userAchievementsRes.ok || !progressRes.ok || !sessionsRes.ok || !booksRes.ok) {
+      console.error('[AchievementService] Failed to fetch achievement data:', {
+        achievementsError: achievementsRes.error,
+        userAchievementsError: userAchievementsRes.error,
+        progressError: progressRes.error,
+        sessionsError: sessionsRes.error,
+        booksError: booksRes.error,
+      });
       return [];
     }
 
     achievements = achievementsRes.data;
     userAchievements = userAchievementsRes.data;
     progress = progressRes.data;
-    sessions = sessionsRes.data.filter(s => s.completed);
+    sessions = sessionsRes.data.filter((s: ReadingSession) => s.completed);
     books = booksRes.data;
+
+
 
   } catch (e) {
     console.error('[AchievementService] Data fetch error:', e);
