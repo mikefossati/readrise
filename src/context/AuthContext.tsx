@@ -2,6 +2,9 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { updateProfile } from '../lib/supabase';
+import ErrorBoundary from '../components/common/ErrorBoundary';
+import { ComponentErrorFallback } from '../components/common/ErrorFallback';
+import { setErrorUser, clearErrorUser, captureError } from '../services/errorService';
 
 interface AuthContextProps {
   user: any;
@@ -10,6 +13,7 @@ interface AuthContextProps {
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, profile?: { username?: string }) => Promise<void>;
   logout: () => Promise<void>;
+  clearError: () => void;
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -20,14 +24,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null);
-      setLoading(false);
-    });
+    const initializeAuth = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const user = data.session?.user ?? null;
+        setUser(user);
+        // Set user in error service
+        if (user) {
+          setErrorUser(user.id);
+        } else {
+          clearErrorUser();
+        }
+      } catch (err) {
+        console.error('Failed to initialize auth:', err);
+        setError('Failed to initialize authentication');
+        captureError(err as Error, { context: 'auth_initialization' });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeAuth();
+
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      const user = session?.user ?? null;
+      setUser(user);
       setLoading(false);
+      // Update user in error service
+      if (user) {
+        setErrorUser(user.id);
+      } else {
+        clearErrorUser();
+      }
     });
+
     return () => {
       listener.subscription.unsubscribe();
     };
@@ -36,43 +66,78 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string) => {
     setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) setError(error.message);
-    setLoading(false);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Login failed';
+      setError(errorMessage);
+      captureError(err as Error, { context: 'user_login', email });
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signup = async (email: string, password: string, profile?: { username?: string }) => {
     setLoading(true);
     setError(null);
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-      return;
-    }
-    // Create profile in profiles table if not exists
-    if (data.user) {
-      try {
+    try {
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) throw error;
+
+      if (data.user) {
         await updateProfile(data.user.id, { username: profile?.username || email });
-      } catch (e: any) {
-        setError(e.message || 'Failed to create user profile');
       }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Signup failed';
+      setError(errorMessage);
+      captureError(err as Error, { context: 'user_signup', email });
+      throw err;
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const logout = async () => {
     setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.signOut();
-    if (error) setError(error.message);
-    setLoading(false);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Logout failed';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const clearError = () => setError(null);
+
+  const value = {
+    user,
+    loading,
+    error,
+    login,
+    signup,
+    logout,
+    clearError,
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, error, login, signup, logout }}>
-      {children}
-    </AuthContext.Provider>
+    <ErrorBoundary
+      level="component"
+      fallback={ComponentErrorFallback}
+      onError={(error: Error, errorInfo: { componentStack?: string | null }, errorId: string) => {
+        console.error('AuthProvider error:', { error, errorInfo, errorId });
+      }}
+    >
+      <AuthContext.Provider value={value}>
+        {children}
+      </AuthContext.Provider>
+    </ErrorBoundary>
   );
 };
 

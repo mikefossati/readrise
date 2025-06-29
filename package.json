@@ -4,6 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "test:errors": "vitest run --testNamePattern=ErrorBoundary",
+    "test:errors:watch": "vitest --testNamePattern=ErrorBoundary",
+    "test:integration": "vitest run --testNamePattern=Integration",
+    "dev:error-test": "vite --mode development",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",

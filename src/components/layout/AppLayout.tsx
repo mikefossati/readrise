@@ -1,4 +1,6 @@
 import React from 'react';
+import ErrorBoundary from '../common/ErrorBoundary';
+import { ComponentErrorFallback } from '../common/ErrorFallback';
 import Header from './Header';
 
 interface AppLayoutProps {
@@ -15,10 +17,29 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children, currentPage }) => {
         <div className="absolute top-3/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
         <div className="absolute top-1/2 left-3/4 w-48 h-48 bg-pink-500/10 rounded-full blur-3xl animate-pulse delay-2000"></div>
       </div>
-      <Header currentPage={currentPage} />
-      <main className="relative z-10 px-2 md:px-6 py-8 max-w-7xl mx-auto">
-        {children}
-      </main>
+      {/* Header with error boundary */}
+      <ErrorBoundary
+        level="component"
+        fallback={ComponentErrorFallback}
+        onError={(error, errorInfo, errorId) => {
+          console.error('Header error:', { error, errorInfo, errorId });
+        }}
+      >
+        <Header currentPage={currentPage} />
+      </ErrorBoundary>
+      {/* Main content with error boundary */}
+      <ErrorBoundary
+        level="section"
+        fallback={ComponentErrorFallback}
+        isolate={true}
+        onError={(error, errorInfo, errorId) => {
+          console.error('Main content error:', { error, errorInfo, errorId });
+        }}
+      >
+        <main className="relative z-10 px-2 md:px-6 py-8 max-w-7xl mx-auto">
+          {children}
+        </main>
+      </ErrorBoundary>
     </div>
   );
 };
