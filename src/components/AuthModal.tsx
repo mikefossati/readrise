@@ -32,13 +32,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ open, onClose, mode: exter
   const [username, setUsername] = useState('');
   const [transitioning, setTransitioning] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const [googleError, setGoogleError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong' | ''>('');
   const [emailValid, setEmailValid] = useState(true);
   const [usernameValid, setUsernameValid] = useState(true);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
   
 
   // Sync internal mode with external prop only on mount

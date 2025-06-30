@@ -16,9 +16,8 @@ let paused = false;
 let pausedAt = 0;
 
 self.onmessage = function (e: MessageEvent<TimerWorkerMessage>) {
-  const type = (e.data as any).type;
-const payload = (e.data as any).payload;
-  if (type === 'START') {
+  const { type, payload } = e.data as TimerWorkerMessage & { payload?: any };
+  if (type === 'START' && payload) {
     duration = payload.duration;
     startTime = performance.now();
     paused = false;

@@ -38,12 +38,7 @@ function getDemoError(type: ErrorType) {
   }
 }
 
-function DemoThrower({ error }: { error: Error }) {
-  // Throw in render, but return null for JSX compliance
-  throw error;
-  // eslint-disable-next-line no-unreachable
-  return null;
-}
+const DemoThrower = ({ error }: { error: Error }) => { throw error; return null; };
 
 export const ErrorFallbackDemo: React.FC = () => {
   const [selected, setSelected] = useState<ErrorType>('network');
@@ -85,7 +80,7 @@ export const ErrorFallbackDemo: React.FC = () => {
           </button>
         </div>
         <ErrorBoundary fallback={Fallback as any} level={selected === 'page' ? 'page' : selected === 'component' ? 'component' : 'section'}>
-          {shouldThrow ? <DemoThrower error={error} /> : <div className="text-green-400 text-center">No error thrown. Click button above to test fallback.</div>}
+          {shouldThrow ? {error ? <DemoThrower error={error} /> : null} : <div className="text-green-400 text-center">No error thrown. Click button above to test fallback.</div>}
         </ErrorBoundary>
       </Card>
     </div>

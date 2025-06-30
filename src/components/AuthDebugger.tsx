@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 
 export const AuthDebugger: React.FC = () => {
@@ -22,16 +22,15 @@ export const AuthDebugger: React.FC = () => {
       const { data, error } = await supabase.auth.getSession();
       const endTime = Date.now();
       
-      addLog(`⏱️ getSession took ${endTime - startTime}ms`);
+      addLog(`getSession returned in ${endTime - startTime}ms`);
       
-      if (error) {
-        addLog(`❌ getSession error: ${error.message}`);
-      } else {
-        addLog(`✅ getSession success: ${data.session ? 'Session found' : 'No session'}`);
-        if (data.session) {
-          addLog(`👤 User ID: ${data.session.user.id}`);
-          addLog(`⏰ Expires at: ${data.session.expires_at ? new Date(data.session.expires_at * 1000).toLocaleString() : 'N/A'}`);
-        }
+      if (error) throw error;
+      addLog('Session: ' + JSON.stringify(data));
+      addLog('Expires at: ' + (data.session?.expires_at ?? 'unknown'));
+      addLog(`✅ getSession success: ${data.session ? 'Session found' : 'No session'}`);
+      if (data.session) {
+        addLog(`👤 User ID: ${data.session.user.id}`);
+        addLog(`⏰ Expires at: ${data.session.expires_at ? new Date(data.session.expires_at * 1000).toLocaleString() : 'N/A'}`);
       }
     } catch (err) {
       addLog(`💥 getSession threw error: ${err}`);

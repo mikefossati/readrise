@@ -50,7 +50,7 @@ const BookLibrary: React.FC = () => {
     import('../lib/supabase').then(m => m.getBooks(user.id)).then((res: { data: any[] | null; error: any }) => {
       setBooks(res.data || []);
       setLoading(false);
-      setError(res.error ? (typeof res.error === 'string' ? res.error : res.error.message || 'Unknown error') : null);
+      setError(res.error ? (typeof res.error === 'string' ? res.error : res.error.message) : null);
     });
   }, [user]);
 
