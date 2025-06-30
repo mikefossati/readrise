@@ -19,8 +19,11 @@ export default function TimerTestPage() {
   // DurationSelector state
   const [duration, setDuration] = useState(25);
   // TimerStats state
-  const [currentSessionMinutes, setCurrentSessionMinutes] = useState(600); // 10 min
   const [todayTotalMinutes, setTodayTotalMinutes] = useState(3600); // 1 hr
+  const [weeklyMinutes] = useState(200);
+  const [currentStreak] = useState(3);
+  const [averageSessionLength] = useState(20);
+  const [totalSessions] = useState(42);
 
   return (
     <div className="min-h-screen bg-slate-900 text-white p-6 flex flex-col items-center gap-10">
@@ -83,12 +86,13 @@ export default function TimerTestPage() {
       <section className="w-full max-w-md bg-slate-800 rounded-xl p-6 mb-6 shadow-md flex flex-col items-center">
         <h2 className="font-semibold mb-2">TimerStats</h2>
         <TimerStats
-          currentSessionMinutes={currentSessionMinutes}
-          todayTotalMinutes={todayTotalMinutes}
-          isActive={timerState === 'running'}
+          todayMinutes={todayTotalMinutes / 60}
+          weeklyMinutes={weeklyMinutes}
+          currentStreak={currentStreak}
+          averageSessionLength={averageSessionLength}
+          totalSessions={totalSessions}
         />
         <div className="flex gap-2 mt-4">
-          <button onClick={() => setCurrentSessionMinutes((t) => t + 60)} className="bg-blue-700 px-3 py-1 rounded">+1 min session</button>
           <button onClick={() => setTodayTotalMinutes((t) => t + 300)} className="bg-green-700 px-3 py-1 rounded">+5 min today</button>
         </div>
       </section>

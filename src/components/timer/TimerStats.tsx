@@ -1,53 +1,90 @@
 import React from 'react';
-import { Clock, Calendar } from 'lucide-react';
+import { Card, CardContent } from '../ui/card';
+import { Badge } from '../ui/badge';
+import { Flame, Calendar, Target, TrendingUp } from 'lucide-react';
 
 interface TimerStatsProps {
-  currentSessionMinutes: number;
-  todayTotalMinutes: number;
-  isActive?: boolean;
-}
-
-function formatDuration(seconds: number): string {
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  
-  if (minutes === 0) {
-    return `${remainingSeconds}s`;
-  }
-  
-  return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
+  todayMinutes: number;
+  weeklyMinutes: number;
+  currentStreak: number;
+  weeklyGoal?: number;
+  averageSessionLength: number;
+  totalSessions: number;
 }
 
 export const TimerStats: React.FC<TimerStatsProps> = ({
-  currentSessionMinutes,
-  todayTotalMinutes,
-  isActive = false,
+  todayMinutes,
+  weeklyMinutes,
+  currentStreak,
+  weeklyGoal = 150,
+  averageSessionLength,
+
 }) => {
+  const weeklyProgress = Math.min((weeklyMinutes / weeklyGoal) * 100, 100);
+
   return (
-    <div className="flex flex-col items-center gap-3 text-sm text-gray-300">
-      {/* Current session */}
-      <div className="flex items-center gap-2">
-        <Clock className="w-4 h-4 text-purple-400" />
-        <span>Current session:</span>
-        <span className={`font-mono font-semibold ${isActive ? 'text-blue-400' : 'text-white'}`}>
-          {formatDuration(currentSessionMinutes)}
-        </span>
-      </div>
-
-      {/* Today's total */}
-      <div className="flex items-center gap-2">
-        <Calendar className="w-4 h-4 text-green-400" />
-        <span>Today's total:</span>
-        <span className="font-mono font-semibold text-white">
-          {formatDuration(todayTotalMinutes)}
-        </span>
-      </div>
-
-      {/* Keyboard shortcut hints */}
-      <div className="text-xs text-gray-500 text-center mt-2">
-        <div>Press <kbd className="px-1 py-0.5 bg-slate-700 rounded text-xs">Space</kbd> to pause/resume</div>
-        <div>Press <kbd className="px-1 py-0.5 bg-slate-700 rounded text-xs">Esc</kbd> to stop</div>
-      </div>
-    </div>
+    <Card className="bg-slate-800/30 backdrop-blur-sm border-slate-700/30">
+      <CardContent className="p-4">
+        <div className="text-center mb-4">
+          <h3 className="text-lg font-semibold text-white mb-1">Your Reading Progress</h3>
+          <p className="text-gray-400 text-sm">Stay motivated with your reading journey</p>
+        </div>
+        
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {/* Today's Progress */}
+          <div className="text-center p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
+            <Calendar className="w-5 h-5 text-blue-400 mx-auto mb-2" />
+            <div className="text-xl font-bold text-white">{todayMinutes}m</div>
+            <div className="text-xs text-blue-300">Today</div>
+          </div>
+          
+          {/* Current Streak */}
+          <div className="text-center p-3 bg-orange-500/10 rounded-lg border border-orange-500/20">
+            <Flame className="w-5 h-5 text-orange-400 mx-auto mb-2" />
+            <div className="text-xl font-bold text-white">{currentStreak}</div>
+            <div className="text-xs text-orange-300">Day Streak</div>
+          </div>
+          
+          {/* Weekly Goal */}
+          <div className="text-center p-3 bg-purple-500/10 rounded-lg border border-purple-500/20">
+            <Target className="w-5 h-5 text-purple-400 mx-auto mb-2" />
+            <div className="text-xl font-bold text-white">{Math.round(weeklyProgress)}%</div>
+            <div className="text-xs text-purple-300">Weekly Goal</div>
+            <div className="w-full bg-slate-700 rounded-full h-1 mt-1">
+              <div 
+                className="bg-purple-400 h-1 rounded-full transition-all duration-500"
+                style={{ width: `${weeklyProgress}%` }}
+              ></div>
+            </div>
+          </div>
+          
+          {/* Average Session */}
+          <div className="text-center p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+            <TrendingUp className="w-5 h-5 text-green-400 mx-auto mb-2" />
+            <div className="text-xl font-bold text-white">{averageSessionLength}m</div>
+            <div className="text-xs text-green-300">Avg Session</div>
+          </div>
+        </div>
+        
+        {/* Motivational Message */}
+        <div className="mt-4 text-center">
+          {currentStreak >= 7 && (
+            <Badge variant="outline" className="border-orange-500/30 text-orange-300">
+              🔥 You're on fire! {currentStreak} day streak
+            </Badge>
+          )}
+          {todayMinutes >= 60 && (
+            <Badge variant="outline" className="border-green-500/30 text-green-300 ml-2">
+              💪 Over 1 hour today!
+            </Badge>
+          )}
+          {weeklyProgress >= 100 && (
+            <Badge variant="outline" className="border-purple-500/30 text-purple-300 ml-2">
+              🎯 Weekly goal achieved!
+            </Badge>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 };
