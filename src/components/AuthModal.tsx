@@ -25,7 +25,7 @@ interface AuthModalProps {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ open, onClose, mode: externalMode }) => {
-  const { login, signup, loading, error, clearError, googleSignIn } = useAuth();
+  const { login, signup, clearError, googleSignIn } = useAuth();
   const [mode, setMode] = useState<'login' | 'signup'>(externalMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -39,7 +39,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ open, onClose, mode: exter
   const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong' | ''>('');
   const [emailValid, setEmailValid] = useState(true);
   const [usernameValid, setUsernameValid] = useState(true);
-  const [retryCount, setRetryCount] = useState(0);
+  
 
   // Sync internal mode with external prop only on mount
   React.useEffect(() => {

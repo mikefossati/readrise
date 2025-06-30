@@ -13,9 +13,7 @@ import {
 import type { ErrorFallbackProps } from './ErrorBoundary';
 
 // Network Error Fallback
-export const NetworkErrorFallback: React.FC<ErrorFallbackProps> = ({
-  error,
-  resetError,
+export const NetworkErrorFallback: React.FC<Pick<ErrorFallbackProps, 'errorId'>> = ({
   errorId,
 }) => {
   const isOffline = !navigator.onLine;
@@ -40,7 +38,7 @@ export const NetworkErrorFallback: React.FC<ErrorFallbackProps> = ({
       </p>
       
       <div className="flex gap-2 justify-center">
-        <Button onClick={resetError} size="sm">
+        <Button onClick={() => window.location.reload()} size="sm">
           <RefreshCw className="w-4 h-4 mr-2" />
           Try Again
         </Button>
@@ -54,9 +52,7 @@ export const NetworkErrorFallback: React.FC<ErrorFallbackProps> = ({
 };
 
 // Component Error Fallback
-export const ComponentErrorFallback: React.FC<ErrorFallbackProps> = ({
-  error,
-  resetError,
+export const ComponentErrorFallback: React.FC<Pick<ErrorFallbackProps, 'errorId'>> = ({
   errorId,
 }) => {
   const isDevelopment = process.env.NODE_ENV === 'development';
@@ -83,13 +79,13 @@ export const ComponentErrorFallback: React.FC<ErrorFallbackProps> = ({
                 Error Details
               </summary>
               <div className="mt-1 p-2 bg-slate-900/50 rounded text-xs font-mono text-gray-400">
-                {error.message}
+                An error occurred
               </div>
             </details>
           )}
           
           <Button 
-            onClick={resetError} 
+            onClick={() => window.location.reload()} 
             size="sm" 
             variant="outline"
             className="text-xs h-7"
@@ -109,9 +105,7 @@ export const ComponentErrorFallback: React.FC<ErrorFallbackProps> = ({
 };
 
 // Page Error Fallback
-export const PageErrorFallback: React.FC<ErrorFallbackProps> = ({
-  error,
-  resetError,
+export const PageErrorFallback: React.FC<Pick<ErrorFallbackProps, 'errorId'>> = ({
   errorId,
 }) => {
   const isDevelopment = process.env.NODE_ENV === 'development';
@@ -145,19 +139,11 @@ export const PageErrorFallback: React.FC<ErrorFallbackProps> = ({
             <Card className="p-4 bg-slate-900/50 border-slate-700/50">
               <div className="space-y-2 text-xs font-mono">
                 <div className="text-red-400">
-                  <strong>Error:</strong> {error.message}
+                  <strong>Error:</strong> An error occurred
                 </div>
                 <div className="text-yellow-400">
                   <strong>Error ID:</strong> {errorId}
                 </div>
-                {error.stack && (
-                  <details>
-                    <summary className="text-blue-400 cursor-pointer">Stack Trace</summary>
-                    <pre className="mt-2 text-gray-400 whitespace-pre-wrap text-xs overflow-auto max-h-32">
-                      {error.stack}
-                    </pre>
-                  </details>
-                )}
               </div>
             </Card>
           </details>
@@ -166,7 +152,7 @@ export const PageErrorFallback: React.FC<ErrorFallbackProps> = ({
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button 
-            onClick={resetError}
+            onClick={() => window.location.reload()}
             className="bg-purple-600 hover:bg-purple-700"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
@@ -207,9 +193,7 @@ export const PageErrorFallback: React.FC<ErrorFallbackProps> = ({
 };
 
 // Route Error Fallback (for navigation errors)
-export const RouteErrorFallback: React.FC<ErrorFallbackProps> = ({
-  error,
-  resetError,
+export const RouteErrorFallback: React.FC<Pick<ErrorFallbackProps, 'errorId'>> = ({
   errorId,
 }) => {
   return (
@@ -257,19 +241,16 @@ export const RouteErrorFallback: React.FC<ErrorFallbackProps> = ({
 };
 
 // Loading Error Fallback (for data fetching errors)
-export const LoadingErrorFallback: React.FC<ErrorFallbackProps & { 
+export const LoadingErrorFallback: React.FC<Pick<ErrorFallbackProps, 'errorId'> & { 
   resourceName?: string;
   onRetry?: () => void;
 }> = ({
-  error,
-  resetError,
   errorId,
   resourceName = 'data',
   onRetry,
 }) => {
   const handleRetry = () => {
     onRetry?.();
-    resetError();
   };
 
   return (
@@ -303,49 +284,33 @@ export const LoadingErrorFallback: React.FC<ErrorFallbackProps & {
 };
 
 // Generic Error Fallback with custom content
-export const GenericErrorFallback: React.FC<ErrorFallbackProps & {
+export const GenericErrorFallback: React.FC<Pick<ErrorFallbackProps, 'errorId'> & {
   title?: string;
   description?: string;
   showErrorDetails?: boolean;
-  actions?: Array<{
-    label: string;
-    onClick: () => void;
-    variant?: 'default' | 'outline' | 'ghost';
-    icon?: React.ReactNode;
-  }>;
+  actions?: Array<{ label: string; onClick: () => void; icon?: React.ReactNode }>;
 }> = ({
-  error,
-  resetError,
   errorId,
-  level,
   title,
   description,
   showErrorDetails = false,
   actions = [],
 }) => {
-  const defaultTitle = level === 'page' ? 'Something went wrong' : 'Error occurred';
-  const defaultDescription = level === 'page' 
-    ? 'We encountered an unexpected error. Please try again.'
-    : 'This section couldn\'t load properly.';
+  const defaultTitle = 'Error occurred';
+  const defaultDescription = 'An unexpected error occurred. Please try again.';
 
   const defaultActions = [
     {
       label: 'Try Again',
-      onClick: resetError,
-      variant: 'default' as const,
+      onClick: () => window.location.reload(),
       icon: <RefreshCw className="w-4 h-4 mr-2" />,
     },
   ];
 
   const allActions = actions.length > 0 ? actions : defaultActions;
 
-  const containerClass = level === 'page'
-    ? 'min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4'
-    : 'p-4';
-
-  const cardClass = level === 'page'
-    ? 'max-w-md mx-auto bg-slate-800/90 border-slate-700/50'
-    : 'bg-slate-800/50 border-slate-700/50';
+  const containerClass = 'w-full max-w-md mx-auto mt-8';
+  const cardClass = 'p-4 bg-slate-900/50 border-slate-700/50';
 
   return (
     <div className={containerClass}>
@@ -370,7 +335,7 @@ export const GenericErrorFallback: React.FC<ErrorFallbackProps & {
               Error Details
             </summary>
             <div className="mt-2 p-3 bg-slate-900/50 rounded text-xs font-mono text-gray-400">
-              <div>Message: {error.message}</div>
+              <div>Message: An error occurred.</div>
               <div>ID: {errorId}</div>
             </div>
           </details>
@@ -381,7 +346,7 @@ export const GenericErrorFallback: React.FC<ErrorFallbackProps & {
             <Button
               key={index}
               onClick={action.onClick}
-              variant={action.variant || 'default'}
+              variant={'default'}
               size="sm"
             >
               {action.icon}

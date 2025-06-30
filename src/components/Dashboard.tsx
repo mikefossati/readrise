@@ -40,12 +40,12 @@ const Dashboard = () => {
     let books: any[] = [];
     let today = new Date();
     today.setHours(0,0,0,0);
-    let todayISO = today.toISOString();
+
     let tomorrow = new Date(today);
     tomorrow.setDate(today.getDate() + 1);
-    let tomorrowISO = tomorrow.toISOString();
-    let monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    let monthStartISO = monthStart.toISOString();
+
+    
+
 
     Promise.all([
       import('../lib/supabase').then(m => m.getBooks(user.id)),

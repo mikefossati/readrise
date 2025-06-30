@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, RenderOptions } from '@testing-library/react';
+import { render } from '@testing-library/react';
+import type { RenderOptions } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '../context/AuthContext';
 import ErrorBoundary from '../components/common/ErrorBoundary';
@@ -67,7 +68,7 @@ export function renderWithProviders(
 // Error testing utilities
 export const createTestError = (message: string = 'Test error') => new Error(message);
 
-export const triggerErrorBoundary = (element: HTMLElement) => {
+export const triggerErrorBoundary = () => {
   // Simulate an error by dispatching an error event
   const errorEvent = new ErrorEvent('error', {
     error: createTestError('Triggered test error'),

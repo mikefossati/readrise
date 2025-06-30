@@ -1,30 +1,25 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState, useRef } from 'react';
 import type { ReactNode } from 'react';
+import type { User, Session } from '@supabase/supabase-js';
+import AuthContext from './AuthContextContext';
+
 import { supabase } from '../lib/supabase';
 import { getProfile, updateProfile } from '../lib/supabase';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import { ComponentErrorFallback } from '../components/common/ErrorFallback';
 import { setErrorUser, clearErrorUser, captureError } from '../services/errorService';
 
-interface AuthContextProps {
-  user: any;
-  loading: boolean;
-  error: string | null;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, profile?: { username?: string }) => Promise<void>;
-  logout: () => Promise<void>;
-  clearError: () => void;
-  googleSignIn: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const initializedRef = useRef(false);
+
   useEffect(() => {
+    if (initializedRef.current) return;
+    initializedRef.current = true;
     console.log('[AuthProvider] useEffect mount');
     const initializeAuth = async () => {
       try {
@@ -36,7 +31,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const { data } = await Promise.race([
             supabase.auth.getSession(),
             timeout,
-          ]);
+          ]) as { data: { session: Session | null }, error: any };
           console.log('[AuthProvider] after supabase.auth.getSession()', data);
           const user = data.session?.user ?? null;
           console.log('[AuthProvider] setUser (initializeAuth):', user);
@@ -209,4 +204,3 @@ export function useAuth() {
   return context;
 }
 
-export default AuthContext;

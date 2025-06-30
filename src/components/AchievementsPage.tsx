@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useContext, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import type { EnrichedAchievement } from '../hooks/useAchievements';
 import { useAchievements } from '../hooks/useAchievements';
 import AchievementProgressBar from './achievements/AchievementProgressBar';
 import AchievementBadge from './achievements/AchievementBadge';
@@ -28,7 +29,7 @@ const AchievementsPage = () => {
   const [selectedTier, setSelectedTier] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
-  import type { EnrichedAchievement } from '../hooks/useAchievements';
+
   const [modalAchievement, setModalAchievement] = useState<EnrichedAchievement | null>(null);
 
   // Notification state

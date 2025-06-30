@@ -1,5 +1,7 @@
-// --- CRITICAL: MOCK SUPABASE MODULE ---
+/// <reference types="vitest" />
 import { vi } from 'vitest';
+import type { MockInstance } from 'vitest';
+// --- CRITICAL: MOCK SUPABASE MODULE ---
 import * as supabase from '../../lib/supabase';
 
 vi.mock('../../lib/supabase', async () => {
@@ -18,7 +20,7 @@ vi.mock('../../lib/supabase', async () => {
 
 
 import * as achievementService from '../achievementService';
-import { createReadingSession, createAchievement, createUserAchievement, createBook } from '../../test/utils/factories';
+import { createReadingSession, createAchievement, createUserAchievement } from '../../test/utils/factories';
 import { addDays, buildConsecutiveSessions, resetAllMocks, expectAchievementUnlocked, setupSupabaseMocks } from '../../test/utils/testHelpers';
 
 // Reset mocks before each test
@@ -64,13 +66,13 @@ describe('checkAllAchievements', () => {
     });
 
     // Explicitly mock all required supabase functions to ensure correct return shapes
-    (supabase.getAchievements as vi.Mock).mockResolvedValue({ ok: true, data: [achievement], error: null });
-    (supabase.getUserAchievements as vi.Mock).mockResolvedValue({ ok: true, data: [], error: null });
-    (supabase.getAchievementProgress as vi.Mock).mockResolvedValue({ ok: true, data: [], error: null });
-    (supabase.getRecentSessions as vi.Mock).mockResolvedValue({ ok: true, data: Array.from({ length: 10 }, () => ({ ...createReadingSession(), completed: true })), error: null });
-    (supabase.getBooks as vi.Mock).mockResolvedValue({ ok: true, data: [], error: null });
-    (supabase.unlockAchievement as vi.Mock).mockResolvedValue({ ok: true, data: createUserAchievement(achievement.id, { achievement_id: achievement.id }), error: null });
-    (supabase.updateAchievementProgress as vi.Mock).mockResolvedValue({ ok: true, data: null, error: null });
+    (supabase.getAchievements as unknown as MockInstance).mockResolvedValue({ ok: true, data: [achievement], error: null });
+    (supabase.getUserAchievements as unknown as MockInstance).mockResolvedValue({ ok: true, data: [], error: null });
+    (supabase.getAchievementProgress as unknown as MockInstance).mockResolvedValue({ ok: true, data: [], error: null });
+    (supabase.getRecentSessions as unknown as MockInstance).mockResolvedValue({ ok: true, data: Array.from({ length: 10 }, () => ({ ...createReadingSession(), completed: true })), error: null });
+    (supabase.getBooks as unknown as MockInstance).mockResolvedValue({ ok: true, data: [], error: null });
+    (supabase.unlockAchievement as unknown as MockInstance).mockResolvedValue({ ok: true, data: createUserAchievement(achievement.id, { achievement_id: achievement.id }), error: null });
+    (supabase.updateAchievementProgress as unknown as MockInstance).mockResolvedValue({ ok: true, data: null, error: null });
 
     const unlocked = await achievementService.checkAllAchievements('user-1');
     expect(supabase.unlockAchievement).toHaveBeenCalled();
@@ -83,8 +85,8 @@ describe('checkAllAchievements', () => {
 // --- ERROR HANDLING TESTS ---
 describe('Error handling', () => {
   it('handles API failure gracefully', async () => {
-    (supabase.getAchievements as vi.Mock).mockRejectedValue(new Error('API error'));
-    (supabase.getUserAchievements as vi.Mock).mockResolvedValue({ data: null });
+    (supabase.getAchievements as unknown as MockInstance).mockRejectedValue(new Error('API error'));
+    (supabase.getUserAchievements as unknown as MockInstance).mockResolvedValue({ data: null });
     const result = await achievementService.getUnlockedAchievements('user-1');
     expect(result).toEqual([]);
   });
@@ -103,7 +105,7 @@ describe('Performance', () => {
 // --- EDGE CASES ---
 describe('Edge Cases', () => {
   it('returns empty if no achievements configured', async () => {
-    (supabase.getAchievements as vi.Mock).mockResolvedValue({ data: [] });
+    (supabase.getAchievements as unknown as MockInstance).mockResolvedValue({ data: [] });
     const result = await achievementService.getUnlockedAchievements('user-1');
     expect(result).toEqual([]);
   });

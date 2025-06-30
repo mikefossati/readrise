@@ -43,6 +43,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 // Book Service Functions
 import type { Result, SupabaseError } from '../types/Result';
 
+
 export async function getBooks(userId: string): Promise<Result<Book[]>> {
   try {
     const { data, error } = await supabase

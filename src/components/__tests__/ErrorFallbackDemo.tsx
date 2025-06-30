@@ -39,7 +39,10 @@ function getDemoError(type: ErrorType) {
 }
 
 function DemoThrower({ error }: { error: Error }) {
+  // Throw in render, but return null for JSX compliance
   throw error;
+  // eslint-disable-next-line no-unreachable
+  return null;
 }
 
 export const ErrorFallbackDemo: React.FC = () => {

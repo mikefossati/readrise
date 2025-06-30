@@ -74,7 +74,7 @@ export function useTimerData(): UseTimerDataReturn {
       .then((res: import('../types/Result').Result<import('../lib/supabase').Book[]>) => {
         if (res.error) {
           let msg: string = 'Failed to fetch books';
-          if (typeof res.error === 'string') msg = res.error;
+          if (res && typeof (res as any).error === 'string') msg = (res as any).error;
           else if (typeof res.error === 'object' && res.error && 'message' in res.error && typeof (res.error as any).message === 'string') msg = (res.error as any).message;
           setError(msg);
         } else {

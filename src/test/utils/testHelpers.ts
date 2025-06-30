@@ -1,8 +1,8 @@
-/// <reference types="vitest" />
+import { vi } from "vitest";
+import type { MockInstance } from "vitest";
 
 import { createReadingSession } from './factories';
 import * as supabase from '../../lib/supabase';
-import { vi } from 'vitest';
 
 vi.mock('../../lib/supabase', () => ({
   getAchievements: vi.fn(),
@@ -62,16 +62,16 @@ export function setupSupabaseMocks({
   achievementProgress?: any[],
   updateAchievementProgress?: any[],
 }) {
-  (supabase.getAchievements as vi.Mock).mockResolvedValue({ data: achievements });
-  (supabase.getUserAchievements as vi.Mock).mockResolvedValue({ data: userAchievements });
-  (supabase.getRecentSessions as vi.Mock).mockResolvedValue({ data: sessions });
-  (supabase.getBooks as vi.Mock).mockResolvedValue({ data: books });
-  (supabase.getAchievementProgress as vi.Mock).mockResolvedValue({ data: achievementProgress });
-  (supabase.updateAchievementProgress as vi.Mock).mockResolvedValue({ data: updateAchievementProgress });
+  (supabase.getAchievements as unknown as MockInstance).mockResolvedValue({ data: achievements });
+  (supabase.getUserAchievements as unknown as MockInstance).mockResolvedValue({ data: userAchievements });
+  (supabase.getRecentSessions as unknown as MockInstance).mockResolvedValue({ data: sessions });
+  (supabase.getBooks as unknown as MockInstance).mockResolvedValue({ data: books });
+  (supabase.getAchievementProgress as unknown as MockInstance).mockResolvedValue({ data: achievementProgress });
+  (supabase.updateAchievementProgress as unknown as MockInstance).mockResolvedValue({ data: updateAchievementProgress });
   if (unlockedAchievement) {
-    (supabase.unlockAchievement as vi.Mock).mockImplementation(() => Promise.resolve({ data: unlockedAchievement }));
+    (supabase.unlockAchievement as unknown as MockInstance).mockImplementation(() => Promise.resolve({ data: unlockedAchievement }));
   } else {
-    (supabase.unlockAchievement as vi.Mock).mockResolvedValue({ data: null });
+    (supabase.unlockAchievement as unknown as MockInstance).mockResolvedValue({ data: null });
   }
 }
 

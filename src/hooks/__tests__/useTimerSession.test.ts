@@ -1,6 +1,7 @@
-/// <reference types="vitest" />
+import { vi } from "vitest";
+import type { MockInstance } from "vitest";
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { useTimerSession } from '../useTimerSession';
 
 // Mock dependencies (supabase, achievementService, etc.)
@@ -71,7 +72,7 @@ describe('useTimerSession', () => {
 
   it('handles errors in session operations', async () => {
     const { startSession } = await import('../../lib/supabase');
-    const mockedStartSession = startSession as vi.Mock;
+    const mockedStartSession = startSession as unknown as MockInstance;
     mockedStartSession.mockImplementationOnce(async () => { throw new Error('fail'); });
     const { result } = renderHook(() => useTimerSession());
     await act(async () => {

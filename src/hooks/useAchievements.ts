@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getAchievements, getUserAchievements, getAchievementProgress } from '../lib/supabase';
-import type { Achievement, UserAchievement, AchievementProgress } from '../types/achievements';
+import type { Achievement } from '../types/achievements';
 
 // Icon mapping for achievement keys
 const iconMap: Record<string, string> = {

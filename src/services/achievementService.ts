@@ -11,8 +11,8 @@ import type {
   Achievement,
   UserAchievement,
   AchievementProgress,
-  UserGoal,
-  AchievementCriteria,
+
+
 } from '../types/achievements';
 import type { ReadingSession, Book } from '../lib/supabase';
 

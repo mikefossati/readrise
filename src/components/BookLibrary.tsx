@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import AppLayout from './layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
@@ -47,10 +47,10 @@ const BookLibrary: React.FC = () => {
   useEffect(() => {
     if (!user?.id) return;
     setLoading(true);
-    import('../lib/supabase').then(m => m.getBooks(user.id)).then(res => {
+    import('../lib/supabase').then(m => m.getBooks(user.id)).then((res: { data: any[] | null; error: any }) => {
       setBooks(res.data || []);
       setLoading(false);
-      setError(res.error);
+      setError(res.error ? (typeof res.error === 'string' ? res.error : res.error.message || 'Unknown error') : null);
     });
   }, [user]);
 

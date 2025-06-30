@@ -172,7 +172,7 @@ export const ErrorBoundaryIntegration: React.FC = () => {
             level="component" 
             fallback={ComponentErrorFallback}
             isolate={true}
-            resetKeys={[activeErrors.timer]}
+            resetKeys={['timer-' + String(activeErrors.timer)]}
           >
             <TimerComponent shouldError={activeErrors.timer} />
           </ErrorBoundary>

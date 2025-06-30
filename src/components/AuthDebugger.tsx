@@ -30,7 +30,7 @@ export const AuthDebugger: React.FC = () => {
         addLog(`✅ getSession success: ${data.session ? 'Session found' : 'No session'}`);
         if (data.session) {
           addLog(`👤 User ID: ${data.session.user.id}`);
-          addLog(`⏰ Expires at: ${new Date(data.session.expires_at * 1000).toLocaleString()}`);
+          addLog(`⏰ Expires at: ${data.session.expires_at ? new Date(data.session.expires_at * 1000).toLocaleString() : 'N/A'}`);
         }
       }
     } catch (err) {

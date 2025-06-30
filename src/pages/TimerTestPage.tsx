@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { TimerDisplay, TimerControls, BookSelector, DurationSelector, TimerStats } from '../components/timer';
 import type { Book } from '../lib/supabase';
 

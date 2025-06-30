@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, Timer, Trophy, TrendingUp, Users, Zap, Star, ArrowRight, Play } from 'lucide-react';
 
 import { AuthModal } from "@/components/AuthModal";
-import { AuthDebugger } from './AuthDebugger';
+
 
 const ReadRiseLanding = () => {
   const [scrollY, setScrollY] = useState(0);
