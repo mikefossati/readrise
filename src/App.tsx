@@ -15,7 +15,7 @@ const BookSearch = React.lazy(() => import('./components/BookSearch'));
 const BookLibrary = React.lazy(() => import('./components/BookLibrary'));
 const ReadingTimer = React.lazy(() => import('./components/ReadingTimer'));
 const AchievementsLazy = React.lazy(() => import('./pages/achievements'));
-const ErrorServiceTestPageLazy = React.lazy(() => import('./pages/ErrorServiceTestPage'));
+
 
 // Loading fallback component
 const LoadingFallback: React.FC = () => (
@@ -125,15 +125,6 @@ function AppRoutes() {
         }
       />
       
-      <Route 
-        path="/error-service-test" 
-        element={
-          <RouteWithErrorBoundary routeName="error-service-test">
-            <ErrorServiceTestPageLazy />
-          </RouteWithErrorBoundary>
-        }
-      />
-
       {/* Catch-all route */}
       <Route 
         path="*" 
