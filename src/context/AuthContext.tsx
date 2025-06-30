@@ -1,6 +1,5 @@
 import { useContext, useEffect, useState, useRef } from 'react';
 import type { ReactNode } from 'react';
-import type { User, Session } from '@supabase/supabase-js';
 import AuthContext from './AuthContextContext';
 
 import { supabase } from '../lib/supabase';
@@ -11,105 +10,182 @@ import { setErrorUser, clearErrorUser, captureError } from '../services/errorSer
 
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // StrictMode protection flags
+  const initialized = useRef(false);
+  const mounted = useRef(true);
+  const listenerRef = useRef<{ subscription: { unsubscribe: () => void } } | null>(null);
+  const sessionHandled = useRef(false);
 
-  const initializedRef = useRef(false);
-
+  // Track component mounting state
   useEffect(() => {
-    if (initializedRef.current) return;
-    initializedRef.current = true;
-    console.log('[AuthProvider] useEffect mount');
-    const initializeAuth = async () => {
-      try {
-        console.log('[AuthProvider] before supabase.auth.getSession()');
-        try {
-          const timeout = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('getSession timeout')), 5000)
-          );
-          const { data } = await Promise.race([
-            supabase.auth.getSession(),
-            timeout,
-          ]) as { data: { session: Session | null }, error: any };
-          console.log('[AuthProvider] after supabase.auth.getSession()', data);
-          const user = data.session?.user ?? null;
-          console.log('[AuthProvider] setUser (initializeAuth):', user);
-          setUser(user);
-          // Set user in error service
-          if (user) {
-            setErrorUser(user.id);
-          } else {
-            clearErrorUser();
-          }
-        } catch (err) {
-          console.error('[AuthProvider] getSession error:', err);
-          throw err;
-        }
-      } catch (err) {
-        console.error('Failed to initialize auth:', err);
-        setError('Failed to initialize authentication');
-        captureError(err as Error, { context: 'auth_initialization' });
-      } finally {
-        setLoading(false);
-      }
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
     };
+  }, []);
 
-    initializeAuth();
-
-    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('[AuthProvider] onAuthStateChange:', event, session);
+  // Primary auth state listener (this handles most cases)
+  useEffect(() => {
+    if (initialized.current) {
+      console.log('[AuthProvider] Skipping duplicate listener setup (StrictMode)');
+      return;
+    }
+    
+    initialized.current = true;
+    console.log('[AuthProvider] Setting up auth state listener');
+    
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted.current) {
+        console.log('[AuthProvider] Auth state change ignored - component unmounted');
+        return;
+      }
+      
+      console.log('[AuthProvider] onAuthStateChange:', event, session ? 'has session' : 'no session');
+      
       const user = session?.user ?? null;
       setUser(user);
-      try {
-        if (user && event === 'SIGNED_IN') {
-          // Check if this is an OAuth user without a profile
-          const { ok, data: profile, error: profileError } = await getProfile(user.id);
-          if (!ok && profileError) {
-            // Only log error, don't block
-            console.warn('[AuthContext] Profile fetch error:', profileError);
-          }
-          if (!profile && user.app_metadata?.provider === 'google') {
-            // Create profile for new OAuth user
-            const username = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Reader';
-            const updateRes = await updateProfile(user.id, { username });
-            if (!updateRes.ok) {
-              setError(updateRes.error.message || 'Failed to create OAuth profile');
-              captureError(updateRes.error as Error, { context: 'oauth_profile_creation', userId: user.id });
-            }
-          }
+      
+      // Mark that we've handled a session
+      sessionHandled.current = true;
+      
+      // Always set loading to false when auth state changes
+      setLoading(false);
+      setError(null);
+      
+      // Update user in error service
+      if (user) {
+        setErrorUser(user.id);
+        
+        // Handle OAuth user profile creation
+        if (event === 'SIGNED_IN' && user.app_metadata?.provider === 'google') {
+          console.log('[AuthProvider] OAuth user signed in, checking profile...');
+          handleOAuthProfile(user);
         }
-      } catch (err) {
-        setError('Failed to handle OAuth profile creation');
-        captureError(err as Error, { context: 'oauth_profile_creation', userId: user?.id });
-      } finally {
-        // Update user in error service
+      } else {
+        clearErrorUser();
+      }
+    });
+    
+    // Store listener reference for cleanup
+    listenerRef.current = listener;
+
+    // Cleanup function
+    return () => {
+      console.log('[AuthProvider] Cleaning up auth listener');
+      if (listenerRef.current) {
+        listenerRef.current.subscription.unsubscribe();
+        listenerRef.current = null;
+      }
+    };
+  }, []);
+
+  // Fallback session check (only if auth state listener doesn't fire within 3 seconds)
+  useEffect(() => {
+    const fallbackSessionCheck = async () => {
+      // Wait a bit to see if auth state listener handles it
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      if (!mounted.current) return;
+      
+      // If session was already handled by listener, skip manual check
+      if (sessionHandled.current) {
+        console.log('[AuthProvider] Session already handled by listener, skipping manual check');
+        return;
+      }
+      
+      console.log('[AuthProvider] Auth listener didn\'t fire, trying manual session check...');
+      
+      try {
+        // Add a shorter timeout for manual check
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          controller.abort();
+          console.log('[AuthProvider] Manual session check timed out, using listener-only approach');
+        }, 5000);
+        
+        const { data, error } = await supabase.auth.getSession();
+        clearTimeout(timeoutId);
+        
+        if (!mounted.current) return;
+        
+        if (error) {
+          console.error('[AuthProvider] Manual session check error:', error);
+          setError(null); // Don't show error, listener will handle it
+          setLoading(false);
+          return;
+        }
+        
+        const user = data.session?.user ?? null;
+        console.log('[AuthProvider] Manual session check result:', user ? user.id : 'no user');
+        
+        setUser(user);
+        
         if (user) {
           setErrorUser(user.id);
         } else {
           clearErrorUser();
         }
-        setLoading(false);
+        
+        setError(null);
+        
+      } catch (err) {
+        console.log('[AuthProvider] Manual session check failed, relying on listener:', err);
+        // Don't set error - the auth state listener will handle auth properly
+      } finally {
+        if (mounted.current) {
+          setLoading(false);
+        }
       }
-    });
-    return () => {
-      listener.subscription.unsubscribe();
     };
+
+    fallbackSessionCheck();
   }, []);
 
+  // Handle OAuth profile creation
+  const handleOAuthProfile = async (user: any) => {
+    try {
+      const { data: profile } = await getProfile(user.id);
+      if (!profile && user.user_metadata?.full_name) {
+        console.log('[AuthProvider] Creating profile for OAuth user');
+        await updateProfile(user.id, { 
+          username: user.user_metadata.full_name || user.email?.split('@')[0] 
+        });
+      }
+    } catch (profileError) {
+      console.error('[AuthProvider] Profile creation failed:', profileError);
+    }
+  };
+
+  // Safety timeout (as last resort)
+  useEffect(() => {
+    const safetyTimeout = setTimeout(() => {
+      if (mounted.current && loading && !sessionHandled.current) {
+        console.log('[AuthProvider] Safety timeout - forcing loading to false');
+        setLoading(false);
+      }
+    }, 10000);
+
+    return () => clearTimeout(safetyTimeout);
+  }, [loading]);
+
+  // Auth actions
   const login = async (email: string, password: string) => {
     setLoading(true);
     setError(null);
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      // Don't set loading to false here - auth state listener will handle it
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Login failed';
       setError(errorMessage);
+      setLoading(false);
       captureError(err as Error, { context: 'user_login', email });
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -122,32 +198,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (data.user) {
         await updateProfile(data.user.id, { username: profile?.username || email });
       }
+      // Don't set loading to false here - auth state listener will handle it
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Signup failed';
       setError(errorMessage);
+      setLoading(false);
       captureError(err as Error, { context: 'user_signup', email });
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
-
-  const logout = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Logout failed';
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const clearError = () => setError(null);
 
   const googleSignIn = async () => {
     setLoading(true);
@@ -160,15 +219,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         },
       });
       if (error) throw error;
+      // Don't set loading to false here - auth state listener will handle it
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Google sign-in failed';
       setError(errorMessage);
+      setLoading(false);
       captureError(err as Error, { context: 'google_oauth' });
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
+
+  const logout = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      // Don't set loading to false here - auth state listener will handle it
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Logout failed';
+      setError(errorMessage);
+      setLoading(false);
+      throw err;
+    }
+  };
+
+  const clearError = () => setError(null);
 
   const value = {
     user,
@@ -177,8 +253,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     login,
     signup,
     logout,
-    clearError,
     googleSignIn,
+    clearError,
   };
 
   return (
@@ -203,4 +279,3 @@ export function useAuth() {
   }
   return context;
 }
-

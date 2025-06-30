@@ -38,6 +38,12 @@ export function useAchievements(userId?: string) {
       getUserAchievements(userId),
       getAchievementProgress(userId),
     ]).then(([achRes, userAchRes, progRes]) => {
+      // DEBUG LOG: Inspect fetched achievement data
+      console.log('[useAchievements] Fetched:', {
+        allAchievements: achRes.data,
+        userAchievements: userAchRes.data,
+        progress: progRes.data,
+      });
       if (achRes.error || userAchRes.error || progRes.error) {
         // Extract error message safely
         const err = achRes.error || userAchRes.error || progRes.error;
