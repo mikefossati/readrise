@@ -80,7 +80,10 @@ export const ErrorFallbackDemo: React.FC = () => {
           </button>
         </div>
         <ErrorBoundary fallback={Fallback as any} level={selected === 'page' ? 'page' : selected === 'component' ? 'component' : 'section'}>
-          {shouldThrow ? {error ? <DemoThrower error={error} /> : null} : <div className="text-green-400 text-center">No error thrown. Click button above to test fallback.</div>}
+          {shouldThrow
+            ? (error ? <DemoThrower error={error} /> : null)
+            : <div className="text-green-400 text-center">No error thrown. Click button above to test fallback.</div>
+          }
         </ErrorBoundary>
       </Card>
     </div>
