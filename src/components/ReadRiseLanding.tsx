@@ -5,12 +5,24 @@ import { Badge } from '@/components/ui/badge';
 import { BookOpen, Timer, Trophy, TrendingUp, Users, Zap, Star, ArrowRight, Play } from 'lucide-react';
 
 import { AuthModal } from "@/components/AuthModal";
+import { AuthDebugger } from './AuthDebugger';
 
 const ReadRiseLanding = () => {
   const [scrollY, setScrollY] = useState(0);
   const [currentFeature, setCurrentFeature] = useState(0);
-  const [showLogin, setShowLogin] = useState(false);
-  const [showSignup, setShowSignup] = useState(false);
+  // Enhanced AuthModal state
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
+
+  // Handlers for opening modal in the correct mode
+  const openLoginModal = () => {
+    setAuthModalMode('login');
+    setShowAuthModal(true);
+  };
+  const openSignupModal = () => {
+    setAuthModalMode('signup');
+    setShowAuthModal(true);
+  };
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -76,17 +88,20 @@ const ReadRiseLanding = () => {
             <a href="#features" className="text-gray-300 hover:text-white transition-colors">Features</a>
             <a href="#how-it-works" className="text-gray-300 hover:text-white transition-colors">How it Works</a>
             <a href="#testimonials" className="text-gray-300 hover:text-white transition-colors">Reviews</a>
-            <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700" onClick={() => setShowLogin(true)}>
+            <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700" onClick={openLoginModal}>
               Login
             </Button>
-            <Button variant="outline" className="border-purple-500/50 text-purple-300 hover:bg-purple-500/10" onClick={() => setShowSignup(true)}>
+            <Button variant="outline" className="border-purple-500/50 text-purple-300 hover:bg-purple-500/10" onClick={openSignupModal}>
               Sign Up
             </Button>
           </div>
         </nav>
-        {/* Auth Modals */}
-        <AuthModal open={showLogin} onClose={() => setShowLogin(false)} mode="login" />
-        <AuthModal open={showSignup} onClose={() => setShowSignup(false)} mode="signup" />
+        {/* Auth Modal (single instance, mode switching) */}
+        <AuthModal 
+          open={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          mode={authModalMode}
+        />
       </header>
 
       {/* Hero Section */}
@@ -109,7 +124,7 @@ const ReadRiseLanding = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4 mb-12">
-            <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-lg px-8 py-4">
+            <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-lg px-8 py-4" onClick={openSignupModal}>
               <Play className="w-5 h-5 mr-2" />
               Start Your Journey
             </Button>
@@ -299,7 +314,7 @@ const ReadRiseLanding = () => {
               Join thousands of readers who've transformed their reading habits with ReadRise. Start your journey today.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-              <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-lg px-8 py-4">
+              <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-lg px-8 py-4" onClick={openSignupModal}>
                 <Play className="w-5 h-5 mr-2" />
                 Start Reading Now
               </Button>
@@ -330,7 +345,7 @@ const ReadRiseLanding = () => {
             </div>
           </div>
           <div className="text-center text-gray-500 mt-8">
-            © 2025 ReadRise. Made with ❤️ for book lovers everywhere.
+            2025 ReadRise. Made with for book lovers everywhere.
           </div>
         </div>
       </footer>

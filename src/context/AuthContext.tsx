@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
-import { updateProfile } from '../lib/supabase';
+import { getProfile, updateProfile } from '../lib/supabase';
 import ErrorBoundary from '../components/common/ErrorBoundary';
 import { ComponentErrorFallback } from '../components/common/ErrorFallback';
 import { setErrorUser, clearErrorUser, captureError } from '../services/errorService';
@@ -14,6 +14,7 @@ interface AuthContextProps {
   signup: (email: string, password: string, profile?: { username?: string }) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
+  googleSignIn: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -24,16 +25,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('[AuthProvider] useEffect mount');
     const initializeAuth = async () => {
       try {
-        const { data } = await supabase.auth.getSession();
-        const user = data.session?.user ?? null;
-        setUser(user);
-        // Set user in error service
-        if (user) {
-          setErrorUser(user.id);
-        } else {
-          clearErrorUser();
+        console.log('[AuthProvider] before supabase.auth.getSession()');
+        try {
+          const timeout = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('getSession timeout')), 5000)
+          );
+          const { data } = await Promise.race([
+            supabase.auth.getSession(),
+            timeout,
+          ]);
+          console.log('[AuthProvider] after supabase.auth.getSession()', data);
+          const user = data.session?.user ?? null;
+          console.log('[AuthProvider] setUser (initializeAuth):', user);
+          setUser(user);
+          // Set user in error service
+          if (user) {
+            setErrorUser(user.id);
+          } else {
+            clearErrorUser();
+          }
+        } catch (err) {
+          console.error('[AuthProvider] getSession error:', err);
+          throw err;
         }
       } catch (err) {
         console.error('Failed to initialize auth:', err);
@@ -46,18 +62,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     initializeAuth();
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('[AuthProvider] onAuthStateChange:', event, session);
       const user = session?.user ?? null;
       setUser(user);
-      setLoading(false);
-      // Update user in error service
-      if (user) {
-        setErrorUser(user.id);
-      } else {
-        clearErrorUser();
+      try {
+        if (user && event === 'SIGNED_IN') {
+          // Check if this is an OAuth user without a profile
+          const { ok, data: profile, error: profileError } = await getProfile(user.id);
+          if (!ok && profileError) {
+            // Only log error, don't block
+            console.warn('[AuthContext] Profile fetch error:', profileError);
+          }
+          if (!profile && user.app_metadata?.provider === 'google') {
+            // Create profile for new OAuth user
+            const username = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Reader';
+            const updateRes = await updateProfile(user.id, { username });
+            if (!updateRes.ok) {
+              setError(updateRes.error.message || 'Failed to create OAuth profile');
+              captureError(updateRes.error as Error, { context: 'oauth_profile_creation', userId: user.id });
+            }
+          }
+        }
+      } catch (err) {
+        setError('Failed to handle OAuth profile creation');
+        captureError(err as Error, { context: 'oauth_profile_creation', userId: user?.id });
+      } finally {
+        // Update user in error service
+        if (user) {
+          setErrorUser(user.id);
+        } else {
+          clearErrorUser();
+        }
+        setLoading(false);
       }
     });
-
     return () => {
       listener.subscription.unsubscribe();
     };
@@ -68,16 +107,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        const errMsg = error.message || 'Login failed';
-        setError(errMsg);
-        captureError(error, { context: 'user_login', email });
-        throw new Error(errMsg);
-      }
-    } catch (err: any) {
-      const errorMessage = err?.message || 'Login failed';
+      if (error) throw error;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Login failed';
       setError(errorMessage);
-      captureError(err, { context: 'user_login', email });
+      captureError(err as Error, { context: 'user_login', email });
       throw err;
     } finally {
       setLoading(false);
@@ -89,24 +123,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
     try {
       const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error) {
-        const errMsg = error.message || 'Signup failed';
-        setError(errMsg);
-        captureError(error, { context: 'user_signup', email });
-        throw new Error(errMsg);
-      }
+      if (error) throw error;
       if (data.user) {
-        const res = await updateProfile(data.user.id, { username: profile?.username || email });
-        if (!res.ok) {
-          setError(res.error?.message || 'Profile update failed');
-          captureError(res.error as Error, { context: 'profile_update', userId: data.user.id });
-          throw new Error(res.error?.message || 'Profile update failed');
-        }
+        await updateProfile(data.user.id, { username: profile?.username || email });
       }
-    } catch (err: any) {
-      const errorMessage = err?.message || 'Signup failed';
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Signup failed';
       setError(errorMessage);
-      captureError(err, { context: 'user_signup', email });
+      captureError(err as Error, { context: 'user_signup', email });
       throw err;
     } finally {
       setLoading(false);
@@ -118,16 +142,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
     try {
       const { error } = await supabase.auth.signOut();
-      if (error) {
-        const errMsg = error.message || 'Logout failed';
-        setError(errMsg);
-        captureError(error, { context: 'user_logout' });
-        throw new Error(errMsg);
-      }
-    } catch (err: any) {
-      const errorMessage = err?.message || 'Logout failed';
+      if (error) throw error;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Logout failed';
       setError(errorMessage);
-      captureError(err, { context: 'user_logout' });
       throw err;
     } finally {
       setLoading(false);
@@ -135,6 +153,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const clearError = () => setError(null);
+
+  const googleSignIn = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+      if (error) throw error;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Google sign-in failed';
+      setError(errorMessage);
+      captureError(err as Error, { context: 'google_oauth' });
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const value = {
     user,
@@ -144,8 +183,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signup,
     logout,
     clearError,
+    googleSignIn,
   };
-
 
   return (
     <ErrorBoundary
@@ -162,8 +201,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-export const useAuth = () => {
+export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
   return context;
-};
+}
+
+export default AuthContext;
