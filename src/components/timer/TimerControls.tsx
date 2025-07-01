@@ -4,6 +4,30 @@ import { Play, Pause, Square, RotateCcw } from 'lucide-react';
 
 type TimerState = 'idle' | 'running' | 'paused' | 'finished';
 
+/**
+ * Controls for the reading session timer.
+ *
+ * @param timerState - Current state of the timer ('idle', 'running', 'paused', 'finished')
+ * @param onStart - Start the timer
+ * @param onPause - Pause the timer
+ * @param onResume - Resume the timer
+ * @param onStop - Stop the timer
+ * @param onReset - Reset the timer
+ * @param disabled - Optional, disables controls
+ * @param loading - Optional, shows loading state
+ *
+ * @example
+ * <TimerControls
+ *   timerState="idle"
+ *   onStart={handleStart}
+ *   onPause={handlePause}
+ *   onResume={handleResume}
+ *   onStop={handleStop}
+ *   onReset={handleReset}
+ *   disabled={false}
+ *   loading={false}
+ * />
+ */
 interface TimerControlsProps {
   timerState: TimerState;
   onStart: () => void;

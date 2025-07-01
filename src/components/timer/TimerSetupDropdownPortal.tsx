@@ -2,6 +2,18 @@ import React, { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
+/**
+ * Portal for rendering dropdowns anchored to a reference element.
+ *
+ * @param children - The dropdown content
+ * @param anchorRef - Ref to the anchor element
+ * @param onRequestClose - Optional callback when dropdown should close
+ *
+ * @example
+ * <TimerSetupDropdownPortal anchorRef={ref} onRequestClose={closeFn}>
+ *   <DropdownContent />
+ * </TimerSetupDropdownPortal>
+ */
 interface DropdownPortalProps {
   children: ReactNode;
   anchorRef: React.RefObject<HTMLElement>;

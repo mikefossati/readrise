@@ -16,6 +16,34 @@ interface ReadingStats {
   totalSessions: number;
 }
 
+/**
+ * Timer setup component for configuring reading sessions.
+ *
+ * @param books - Array of available books for the session
+ * @param selectedBook - Currently selected book
+ * @param onBookSelect - Callback when a book is selected
+ * @param duration - Session duration in minutes
+ * @param onDurationChange - Callback when duration changes
+ * @param onStart - Callback to start the session
+ * @param loadingBooks - Whether books are loading
+ * @param startingSession - Whether a session is being started
+ * @param readingStats - Reading statistics object
+ * @param error - Optional error message
+ *
+ * @example
+ * <TimerSetup
+ *   books={books}
+ *   selectedBook={selectedBook}
+ *   onBookSelect={setSelectedBook}
+ *   duration={25}
+ *   onDurationChange={setDuration}
+ *   onStart={handleStart}
+ *   loadingBooks={false}
+ *   startingSession={false}
+ *   readingStats={stats}
+ *   error={null}
+ * />
+ */
 interface TimerSetupProps {
   books: Book[];
   selectedBook: Book | null;

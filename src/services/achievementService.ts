@@ -125,7 +125,7 @@ export async function checkAllAchievements(userId: string, sessionData?: Reading
           console.log('[AchievementService] Sessions details:', sessions.length, 'total,', sessions.filter(s => s.completed).length, 'completed');
           if (totalSessions >= target) {
             console.log('[AchievementService] ✅ Scheduling unlock for session_count:', ach.key);
-            unlockBatch.push(() => unlockAchievement(userId, ach.key, ach));
+            unlockBatch.push(() => unlockAchievement(userId, ach.id, ach));
           } else {
             console.log('[AchievementService] ❌ Not unlocking session_count:', ach.key, '- need', target, 'have', totalSessions);
           }
@@ -141,7 +141,7 @@ export async function checkAllAchievements(userId: string, sessionData?: Reading
           const lastSession = sessionData || sessions[0];
           if (lastSession && lastSession.actual_duration && lastSession.actual_duration >= target) {
             console.log('[AchievementService] Scheduling unlock for single_session_minutes:', ach.key);
-            unlockBatch.push(() => unlockAchievement(userId, ach.key, ach));
+            unlockBatch.push(() => unlockAchievement(userId, ach.id, ach));
           }
           break;
         }
@@ -151,7 +151,7 @@ export async function checkAllAchievements(userId: string, sessionData?: Reading
           console.log('[AchievementService] Sessions with durations:', sessions.map(s => s.actual_duration));
           if (totalMinutes >= target) {
             console.log('[AchievementService] ✅ Scheduling unlock for total_reading_minutes:', ach.key);
-            unlockBatch.push(() => unlockAchievement(userId, ach.key, ach));
+            unlockBatch.push(() => unlockAchievement(userId, ach.id, ach));
           } else {
             console.log('[AchievementService] ❌ Not unlocking total_reading_minutes:', ach.key, '- need', target, 'have', totalMinutes);
           }
@@ -169,7 +169,7 @@ export async function checkAllAchievements(userId: string, sessionData?: Reading
           console.log('[AchievementService] Books statuses:', books.map(b => b.reading_status));
           if (booksFinished >= target) {
             console.log('[AchievementService] ✅ Scheduling unlock for books_completed:', ach.key);
-            unlockBatch.push(() => unlockAchievement(userId, ach.key, ach));
+            unlockBatch.push(() => unlockAchievement(userId, ach.id, ach));
           } else {
             console.log('[AchievementService] ❌ Not unlocking books_completed:', ach.key, '- need', target, 'have', booksFinished);
           }
@@ -186,7 +186,7 @@ export async function checkAllAchievements(userId: string, sessionData?: Reading
           console.log('[AchievementService] Session dates for streak:', sessions.map(s => s.start_time?.slice(0, 10)));
           if (currentStreak >= target) {
             console.log('[AchievementService] ✅ Scheduling unlock for consecutive_days:', ach.key);
-            unlockBatch.push(() => unlockAchievement(userId, ach.key, ach));
+            unlockBatch.push(() => unlockAchievement(userId, ach.id, ach));
           } else {
             console.log('[AchievementService] ❌ Not unlocking consecutive_days:', ach.key, '- need', target, 'have', currentStreak);
           }
@@ -296,7 +296,7 @@ export function calculateStreaks(sessions: ReadingSession[]): { current: number,
 }
 
 // --- Robust unlockAchievement with cache and retry ---
-async function unlockAchievement(userId: string, achievementKey: string, achievement?: Achievement): Promise<UserAchievement | null> {
+export async function unlockAchievement(userId: string, achievementKey: string, achievement?: Achievement): Promise<UserAchievement | null> {
   try {
     let ach = achievement;
     

@@ -1,5 +1,19 @@
 import React from 'react';
 
+/**
+ * Visual display for the reading session timer progress.
+ *
+ * @param remaining - Seconds remaining in the session
+ * @param progress - Progress as a value between 0 and 1
+ * @param size - Optional, diameter of the timer display in pixels
+ *
+ * @example
+ * <TimerDisplay
+ *   remaining={300}
+ *   progress={0.5}
+ *   size={200}
+ * />
+ */
 interface TimerDisplayProps {
   remaining: number;
   progress: number;
