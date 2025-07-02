@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Play, Pause, Square, RotateCcw, BookOpen } from 'lucide-react';
 import type { Book } from '../../lib/supabase';
+import { useAmbientAudio } from '../../hooks/useAmbientAudio';
+import { useSoundSrc } from './useSoundSrc';
+import { Slider } from './Slider';
 
 interface ActiveTimerProps {
   book: Book;
@@ -15,6 +18,9 @@ interface ActiveTimerProps {
   onResume: () => void;
   onStop: () => void;
   onReset: () => void;
+  sound: string;
+  volume: number;
+  setVolume: (v: number) => void;
 }
 
 function formatTime(seconds: number): string {
@@ -33,7 +39,44 @@ export const ActiveTimer: React.FC<ActiveTimerProps> = ({
   onResume,
   onStop,
   onReset,
+  sound,
+  volume,
+  setVolume,
 }) => {
+  const [muted, setMuted] = useState(false);
+  const [audioLoading, setAudioLoading] = useState(false);
+  const [audioError, setAudioError] = useState<string | null>(null);
+  const src = useSoundSrc(sound);
+
+  useEffect(() => {
+    if (sound === 'none' || !src) {
+      setAudioLoading(false);
+      setAudioError(null);
+      return;
+    }
+    setAudioLoading(true);
+    setAudioError(null);
+  }, [src, sound]);
+
+  useAmbientAudio({
+    src: muted ? null : src,
+    volume: muted ? 0 : volume,
+    playing: isRunning && !!src,
+    fade: true,
+    onError: (e) => {
+      setAudioLoading(false);
+      setAudioError(e?.message || 'Audio failed to load or play.');
+      console.error('Audio error:', e);
+    },
+  });
+
+  useEffect(() => {
+    if (!audioLoading) return;
+    if (isRunning && !!src && !muted && !audioError) {
+      setAudioLoading(false);
+    }
+  }, [isRunning, src, muted, audioError, audioLoading]);
+
   const radius = 120;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - progress);
@@ -73,6 +116,49 @@ export const ActiveTimer: React.FC<ActiveTimerProps> = ({
       <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700/50 mb-8">
         <CardContent className="p-8">
           <div className="text-center">
+            {/* --- Audio Controls --- */}
+            <div className="flex items-center justify-center gap-4 mb-6">
+              {audioLoading && (
+                <div className="flex items-center justify-center gap-2 mb-2 text-purple-300 animate-pulse">
+                  <svg className="animate-spin" width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" stroke="#a78bfa" strokeWidth="3" fill="none" /></svg>
+                  Loading background sound...
+                </div>
+              )}
+              {audioError && (
+                <div className="flex items-center justify-center gap-2 mb-2 text-red-400 bg-red-900/30 border border-red-500/30 rounded px-3 py-1">
+                  <span role="img" aria-label="Audio error">⚠️</span>
+                  {audioError}
+                </div>
+              )}
+              <span className="text-gray-400 text-sm flex items-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" stroke="#a78bfa" strokeWidth="2" /><text x="50%" y="55%" textAnchor="middle" fontSize="10" fill="#a78bfa" fontFamily="monospace">{sound === 'none' ? 'Off' : sound.replace('-', ' ').slice(0, 8)}</text></svg>
+                {sound === 'none' ? 'No Sound' : sound.replace('-', ' ')}
+              </span>
+              <button
+                aria-label={muted ? 'Unmute background sound' : 'Mute background sound'}
+                className="p-2 rounded hover:bg-slate-700/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400"
+                onClick={() => setMuted((m) => !m)}
+                type="button"
+                tabIndex={0}
+                title={muted ? 'Unmute background sound' : 'Mute background sound'}
+              >
+                {muted ? <span role="img" aria-label="Muted">🔇</span> : <span role="img" aria-label="Unmuted">🔊</span>}
+              </button>
+              <Slider
+                min={0}
+                max={100}
+                step={1}
+                value={muted ? 0 : volume}
+                onValueChange={(v) => {
+                  setVolume(v);
+                  if (v === 0) setMuted(true);
+                  else setMuted(false);
+                }}
+                aria-label="Volume"
+                className="w-32"
+              />
+              <span className="w-8 text-right text-gray-400 text-xs">{muted ? 0 : volume}%</span>
+            </div>
             {/* Circular Progress */}
             <div className="relative inline-block mb-8">
               <svg width={280} height={280} className="transform -rotate-90">

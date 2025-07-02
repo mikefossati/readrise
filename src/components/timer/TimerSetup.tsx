@@ -55,6 +55,10 @@ interface TimerSetupProps {
   startingSession: boolean;
   readingStats: ReadingStats;
   error?: string | null;
+  sound: string;
+  setSound: (sound: string) => void;
+  volume: number;
+  setVolume: (v: number) => void;
 }
 
 const DURATION_PRESETS = [15, 25, 30, 45, 60, 90];
@@ -71,6 +75,8 @@ const getEndTime = (durationMinutes: number): string => {
   return endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
+import { SoundPicker } from './SoundPicker';
+
 export const TimerSetup: React.FC<TimerSetupProps> = ({
   books,
   selectedBook,
@@ -82,10 +88,22 @@ export const TimerSetup: React.FC<TimerSetupProps> = ({
   startingSession,
   readingStats,
   error,
+  sound,
+  setSound,
+  volume,
+  setVolume,
 }) => {
-  // Error/edge/validation state management
 
+
+  // Error/edge/validation state management
   const [startError, setStartError] = useState<string | null>(null);
+
+  /**
+   * Background sound picker for session.
+   * Compliant with dev_guidelines.md: state managed at top level, documented, accessible.
+   */
+  // State is managed above. Render SoundPicker in main UI below.
+
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? navigator.onLine : true);
 
@@ -207,6 +225,8 @@ export const TimerSetup: React.FC<TimerSetupProps> = ({
         <h1 className="text-4xl font-bold text-white mb-4">Reading Timer</h1>
         <p className="text-xl text-gray-300">Focus on your reading with distraction-free sessions</p>
       </div>
+
+
 
       {/* Stats with delayed animation */}
       {!loadingBooks && books.length > 0 && (
@@ -485,6 +505,14 @@ export const TimerSetup: React.FC<TimerSetupProps> = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* SoundPicker for background audio selection */}
+      <SoundPicker
+        value={sound}
+        onChange={setSound}
+        volume={volume}
+        onVolumeChange={setVolume}
+      />
 
       {/* Start Button, Error, Validation, Offline States */}
       {/* Offline Banner */}

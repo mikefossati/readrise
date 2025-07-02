@@ -6,6 +6,12 @@ import { ActiveTimer } from './timer/ActiveTimer';
 import { SessionCompleteModal } from './SessionCompleteModal';
 
 const ReadingTimer: React.FC = () => {
+  // --- Ambient Sound State ---
+  const [sound, setSound] = React.useState<string>(() => localStorage.getItem('readrise_last_sound') || 'none');
+  const [volume, setVolume] = React.useState<number>(() => {
+    const v = localStorage.getItem('readrise_last_volume');
+    return v ? Number(v) : 50;
+  });
   const {
     timerState,
     selectedBook,
@@ -102,10 +108,14 @@ const ReadingTimer: React.FC = () => {
               startingSession={startingSession}
               readingStats={readingStats}
               error={error}
+              sound={sound}
+              setSound={setSound}
+              volume={volume}
+              setVolume={setVolume}
             />
           )}
 
-          {(timerState === 'running' || timerState === 'paused') && selectedBook && (
+          {(timerState === 'running' || timerState === 'paused') && selectedBook ? (
             <ActiveTimer
               book={selectedBook}
               duration={duration}
@@ -116,8 +126,11 @@ const ReadingTimer: React.FC = () => {
               onResume={resumeTimer}
               onStop={stopTimer}
               onReset={resetTimer}
+              sound={sound}
+              volume={volume}
+              setVolume={setVolume}
             />
-          )}
+          ) : null}
 
           {/* Completion Modal */}
           {showCompletionModal && selectedBook && currentSession && (

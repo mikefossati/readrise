@@ -1,0 +1,44 @@
+[
+  {
+    "id": "none",
+    "label": "No Sound",
+    "preview": null,
+    "src": null
+  },
+  {
+    "id": "rain",
+    "label": "Rain",
+    "preview": "/audio/rain-and-little-storm-298087.mp3",
+    "src": "/audio/rain-and-little-storm-298087.mp3"
+  },
+  {
+    "id": "forest",
+    "label": "Forest",
+    "preview": "/audio/forest-ambience-296528.mp3",
+    "src": "/audio/forest-ambience-296528.mp3"
+  },
+  {
+    "id": "white-noise",
+    "label": "White Noise",
+    "preview": "/audio/white-noise-171891.mp3",
+    "src": "/audio/white-noise-171891.mp3"
+  },
+  {
+    "id": "brown-noise",
+    "label": "Brown Noise",
+    "preview": "/audio/brown-noise-by-digitalspa-170337.mp3",
+    "src": "/audio/brown-noise-by-digitalspa-170337.mp3"
+  },
+  {
+    "id": "ocean",
+    "label": "Ocean Waves",
+    "preview": "/audio/ocean-waves-396895.mp3",
+    "src": "/audio/ocean-waves-396895.mp3"
+  },
+  {
+    "id": "fireplace",
+    "label": "Fireplace",
+    "preview": "/audio/fireplace-fx-56636.mp3",
+    "src": "/audio/fireplace-fx-56636.mp3"
+  }
+]
