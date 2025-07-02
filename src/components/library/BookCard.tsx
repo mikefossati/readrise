@@ -1,10 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { getCache } from '../../utils/cache';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { StarRating } from '../StarRating';
 import type { Book } from '../../lib/supabase';
 
+/**
+ * BookCard displays a book with cover, title, author, rating, and reading status.
+ * Uses cached cover images for performance.
+ */
 interface BookCardProps {
   book: Book;
   onStatusChange: (bookId: string, status: Book['reading_status']) => void;
@@ -70,6 +75,16 @@ export const BookCard: React.FC<BookCardProps> = ({
     setDropdownOpen(false);
   };
 
+  // Use cached cover if available
+  const [cachedCover, setCachedCover] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    let cover: string | undefined = undefined;
+    if (book.id) {
+      cover = getCache<string>(`google_book_cover_${book.id}`) || undefined;
+    }
+    setCachedCover(cover);
+  }, [book.id]);
+
   return (
     <Card className="bg-gradient-to-br from-slate-800/70 to-purple-900/60 border-slate-700/50 flex flex-col h-full">
       <CardHeader className="flex flex-row gap-2 items-center pb-2">
@@ -77,9 +92,9 @@ export const BookCard: React.FC<BookCardProps> = ({
           className="flex-shrink-0 w-14 h-20 rounded overflow-hidden bg-slate-700 flex items-center justify-center"
           style={book.cover_url ? {} : { background: book.cover_color || 'linear-gradient(135deg, #7f53ac 0%, #657ced 100%)' }}
         >
-          {book.cover_url ? (
+          {(cachedCover || book.cover_url) ? (
             <img 
-              src={book.cover_url} 
+              src={cachedCover || book.cover_url || undefined} 
               alt={`Cover of ${book.title}`} 
               className="object-cover w-full h-full"
               loading="lazy"

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { getBooks, supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import type { Book } from '../lib/supabase';
+import { getCache, setCache } from '../utils/cache';
 
 interface UseBookLibraryReturn {
   books: Book[];
@@ -25,26 +26,44 @@ export function useBookLibrary(): UseBookLibraryReturn {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all');
 
-  // Fetch books
+  // Fetch books with cache
   const fetchBooks = useCallback(async () => {
     if (!user?.id) return;
-    
     setLoading(true);
     setError(null);
-    
+
+    // Try cache first
+    const cacheKey = `library_books_${user.id}`;
+    const cached = getCache<Book[]>(cacheKey);
+    if (cached) {
+      setBooks(cached);
+      setLoading(false);
+      // Also refresh in background
+      getBooks(user.id).then(res => {
+        if (res.data) {
+          const sortedBooks = (res.data || []).sort((a, b) => {
+            if (a.reading_status === 'currently_reading' && b.reading_status !== 'currently_reading') return -1;
+            if (a.reading_status !== 'currently_reading' && b.reading_status === 'currently_reading') return 1;
+            return (a.title || '').localeCompare(b.title || '');
+          });
+          setCache(cacheKey, sortedBooks);
+          setBooks(sortedBooks);
+        }
+      });
+      return;
+    }
+
     try {
       const res = await getBooks(user.id);
       if (res.error) {
         throw new Error(res.error.message || 'Unknown error');
       }
-      
       const sortedBooks = (res.data || []).sort((a, b) => {
-        // Currently reading first, then alphabetical
         if (a.reading_status === 'currently_reading' && b.reading_status !== 'currently_reading') return -1;
         if (a.reading_status !== 'currently_reading' && b.reading_status === 'currently_reading') return 1;
         return (a.title || '').localeCompare(b.title || '');
       });
-      
+      setCache(cacheKey, sortedBooks);
       setBooks(sortedBooks);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch books');

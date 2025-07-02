@@ -17,10 +17,12 @@ export default defineConfig({
     exclude: ['node_modules', 'dist', 'coverage'],
     coverage: {
       reporter: ['text', 'html', 'lcov'],
-      lines: 95,
-      functions: 95,
-      branches: 95,
-      statements: 95,
+      thresholds: {
+        lines: 95,
+        functions: 95,
+        branches: 95,
+        statements: 95,
+      },
     },
     ui: true,
   },

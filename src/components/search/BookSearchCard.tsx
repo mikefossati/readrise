@@ -1,9 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getCache } from '../../utils/cache';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Plus, CheckCircle, Star, Calendar, FileText, Loader2 } from 'lucide-react';
 
+/**
+ * BookSearchCard displays a book search result with cover, title, authors, and metadata.
+ * Uses cached cover images for performance.
+ */
 interface BookSearchCardProps {
   book: {
     id: string;
@@ -46,14 +51,21 @@ export const BookSearchCard: React.FC<BookSearchCardProps> = ({
 
   const publishYear = book.publishedDate ? new Date(book.publishedDate).getFullYear() : null;
 
+  // Use cached cover if available
+  const [cachedCover, setCachedCover] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    const cover = getCache<string>(`google_book_cover_${book.id}`) || undefined;
+    setCachedCover(cover);
+  }, [book.id]);
+
   return (
     <Card className="bg-gradient-to-br from-slate-800/70 to-purple-900/60 border-slate-700/50 flex flex-col h-full hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-200">
       <CardHeader className="p-4 pb-2">
         <div className="flex gap-3">
           <div className="flex-shrink-0 w-16 h-24 rounded overflow-hidden bg-slate-700 flex items-center justify-center">
-            {book.cover ? (
+            {(cachedCover || book.cover) ? (
               <img 
-                src={book.cover} 
+                src={cachedCover || book.cover || undefined} 
                 alt={`Cover of ${book.title}`} 
                 className="object-cover w-full h-full"
                 loading="lazy"
@@ -61,6 +73,7 @@ export const BookSearchCard: React.FC<BookSearchCardProps> = ({
             ) : (
               <span className="text-gray-500 text-xs text-center px-1">No Cover</span>
             )}
+            
           </div>
           
           <div className="flex-1 min-w-0">

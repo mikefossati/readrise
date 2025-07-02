@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { addBook, getBooks } from '../lib/supabase';
 import type { Book } from '../lib/supabase';
+import { getCache, setCache } from '../utils/cache';
 
 export interface BookSearchResult {
   id: string;
@@ -71,7 +72,7 @@ export function useBookSearch(): UseBookSearchReturn {
     });
   }, [user?.id]);
 
-  // Search books
+  // Search books with caching
   useEffect(() => {
     if (!debouncedQuery) {
       setResults([]);
@@ -80,7 +81,8 @@ export function useBookSearch(): UseBookSearchReturn {
       return;
     }
 
-    const searchBooks = async () => {
+    const cacheKey = `google_books_search_${debouncedQuery.toLowerCase()}`;
+    const fetchGoogleBooksAndCache = async () => {
       // Cancel previous request
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -101,23 +103,30 @@ export function useBookSearch(): UseBookSearchReturn {
         const data = await response.json();
         if (!data.items) {
           setResults([]);
+          setCache(cacheKey, [], { ttl: 24 * 60 * 60 * 1000 });
           return;
         }
         const books: BookSearchResult[] = data.items
           .filter((item: any) => item.volumeInfo.title)
-          .map((item: any) => ({
-            id: item.id,
-            title: item.volumeInfo.title,
-            authors: item.volumeInfo.authors || ['Unknown Author'],
-            description: item.volumeInfo.description || '',
-            cover: item.volumeInfo.imageLinks?.thumbnail?.replace('http:', 'https:') || null,
-            publishedDate: item.volumeInfo.publishedDate,
-            pageCount: item.volumeInfo.pageCount,
-            categories: item.volumeInfo.categories,
-            averageRating: item.volumeInfo.averageRating,
-            ratingsCount: item.volumeInfo.ratingsCount,
-          }));
+          .map((item: any) => {
+            const cover = item.volumeInfo.imageLinks?.thumbnail?.replace('http:', 'https:') || null;
+            // Cache cover by book id for later use
+            if (cover) setCache(`google_book_cover_${item.id}`, cover, { ttl: 24 * 60 * 60 * 1000 });
+            return {
+              id: item.id,
+              title: item.volumeInfo.title,
+              authors: item.volumeInfo.authors || ['Unknown Author'],
+              description: item.volumeInfo.description || '',
+              cover,
+              publishedDate: item.volumeInfo.publishedDate,
+              pageCount: item.volumeInfo.pageCount,
+              categories: item.volumeInfo.categories,
+              averageRating: item.volumeInfo.averageRating,
+              ratingsCount: item.volumeInfo.ratingsCount,
+            };
+          });
         setResults(books);
+        setCache(cacheKey, books, { ttl: 24 * 60 * 60 * 1000 });
       } catch (err: any) {
         if (err.name !== 'AbortError') {
           setError('Failed to search books. Please try again.');
@@ -127,7 +136,17 @@ export function useBookSearch(): UseBookSearchReturn {
         setLoading(false);
       }
     };
-    searchBooks();
+
+    const cached = getCache<BookSearchResult[]>(cacheKey);
+    if (cached) {
+      setResults(cached);
+      setHasSearched(true);
+      setLoading(false);
+      // Optionally refresh in background
+      fetchGoogleBooksAndCache();
+    } else {
+      fetchGoogleBooksAndCache();
+    }
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
