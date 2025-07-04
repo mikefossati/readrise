@@ -137,8 +137,6 @@ const ReadingTimer: React.FC = () => {
             <SessionCompleteModal
               open={showCompletionModal}
               bookTitle={selectedBook.title}
-              plannedMinutes={duration}
-              actualMinutes={Math.round((duration * 60 - remaining) / 60)}
               mood=""
               notes=""
               onMoodChange={() => {}}

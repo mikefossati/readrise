@@ -2,13 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './ui/button';
 import Confetti from 'react-confetti';
 import { useWindowSize } from 'react-use';
-import { Trophy } from 'lucide-react';
+import { Trophy, X } from 'lucide-react';
 
 export interface SessionCompleteModalProps {
   open: boolean;
   bookTitle: string;
-  plannedMinutes: number;
-  actualMinutes: number;
   mood: string;
   notes: string;
   onMoodChange: (mood: string) => void;
@@ -19,13 +17,6 @@ export interface SessionCompleteModalProps {
   onClose: () => void;
   achievement?: string;
   showConfetti?: boolean;
-  focusQuality?: 'perfect' | 'paused' | 'resumed';
-  streakDay?: number | null;
-  nextMilestoneMinutes?: number | null;
-  bestSession?: boolean;
-  pagesRead?: number | '';
-  onPagesReadChange?: (pages: number | '') => void;
-  todayTotalMinutes?: number;
 }
 
 const MOODS = [
@@ -36,12 +27,9 @@ const MOODS = [
   { value: 'distracted', label: '😵 Distracted' },
 ];
 
-
 export const SessionCompleteModal: React.FC<SessionCompleteModalProps> = ({
   open,
   bookTitle,
-  plannedMinutes,
-  actualMinutes,
   mood,
   notes,
   onGoLibrary,
@@ -52,16 +40,18 @@ export const SessionCompleteModal: React.FC<SessionCompleteModalProps> = ({
   onClose,
   achievement,
   showConfetti,
-  focusQuality,
-  streakDay,
-  nextMilestoneMinutes,
-  bestSession,
-  pagesRead,
-  onPagesReadChange,
-  todayTotalMinutes,
 }) => {
+  const { width, height } = useWindowSize();
+  const [confettiActive, setConfettiActive] = useState(false);
+  const confettiTimeout = useRef<NodeJS.Timeout | null>(null);
+  
+  // Motion preference
+  const prefersReducedMotion = typeof window !== 'undefined' && 
+    window.matchMedia && 
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   // Keyboard: close on Escape
-  React.useEffect(() => {
+  useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
@@ -70,11 +60,6 @@ export const SessionCompleteModal: React.FC<SessionCompleteModalProps> = ({
       return () => document.removeEventListener('keydown', handleEscape);
     }
   }, [open, onClose]);
-  const { width, height } = useWindowSize();
-  const [confettiActive, setConfettiActive] = useState(false);
-  const confettiTimeout = useRef<NodeJS.Timeout | null>(null);
-  // Motion preference
-  const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   useEffect(() => {
     if (showConfetti && !prefersReducedMotion) {
@@ -98,6 +83,7 @@ export const SessionCompleteModal: React.FC<SessionCompleteModalProps> = ({
     wind: 0.01,
     tweenDuration: 3500,
   };
+
   if (achievement && achievement.toLowerCase().includes('first')) {
     confettiProps = {
       ...confettiProps,
@@ -122,9 +108,11 @@ export const SessionCompleteModal: React.FC<SessionCompleteModalProps> = ({
   }
 
   if (!open) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="bg-gradient-to-br from-slate-800 to-purple-900 rounded-xl shadow-xl p-8 w-full max-w-md relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 p-6 w-full max-w-lg mx-4 relative">
+        
         {/* Confetti effect */}
         {confettiActive && !prefersReducedMotion && (
           <Confetti
@@ -134,93 +122,87 @@ export const SessionCompleteModal: React.FC<SessionCompleteModalProps> = ({
             className="absolute inset-0 pointer-events-none z-10"
           />
         )}
-        <h2 className="text-2xl font-bold text-center text-white mb-2">Session Complete!</h2>
-        <div className="text-center text-lg text-gray-200 mb-2">{bookTitle}</div>
-        {/* Session statistics */}
-        <div className="mb-4 space-y-2">
-          {/* Completion percentage */}
-          {plannedMinutes > 0 && (
-            <div className="text-center text-yellow-300">
-              Completion: <span className="font-bold">{Math.round(100 * Math.min(actualMinutes / plannedMinutes, 1))}%</span>
-              {actualMinutes < plannedMinutes && <span className="ml-2 text-xs text-orange-300">(Stopped early)</span>}
-            </div>
-          )}
-          {/* Focus quality */}
-          {typeof focusQuality !== 'undefined' && (
-            <div className="text-center">
-              Focus Quality: {focusQuality === 'perfect' ? <span className="text-green-400 font-semibold">Perfect</span> : focusQuality === 'paused' ? <span className="text-yellow-400 font-semibold">Paused</span> : <span className="text-blue-400 font-semibold">Resumed</span>}
-            </div>
-          )}
-          {/* Streak info */}
-          {streakDay && streakDay > 1 && (
-            <div className="text-center text-pink-300">Day {streakDay} of your streak!</div>
-          )}
-          {/* Next milestone */}
-          {nextMilestoneMinutes && nextMilestoneMinutes > 0 && (
-            <div className="text-center text-purple-300">{nextMilestoneMinutes} min to next reading goal!</div>
-          )}
-          {/* Session comparison */}
-          {bestSession && (
-            <div className="text-center text-green-300 font-bold">Your best session this week!</div>
-          )}
-          {/* Pages read input */}
-          {typeof onPagesReadChange === 'function' && (
-            <div className="flex justify-center items-center gap-2">
-              <label htmlFor="pages-read" className="text-gray-300">Pages read:</label>
-              <input
-                id="pages-read"
-                type="number"
-                min={0}
-                className="w-16 rounded bg-slate-700/60 border border-slate-600 text-white px-2 py-1 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                value={pagesRead ?? ''}
-                onChange={e => onPagesReadChange(e.target.value === '' ? '' : Math.max(0, parseInt(e.target.value)))}
-                placeholder="0"
-              />
-            </div>
-          )}
-          {/* Total reading time today */}
-          {todayTotalMinutes !== undefined && todayTotalMinutes !== null && (
-            <div className="text-center text-cyan-300">Total today: <span className="font-bold">{todayTotalMinutes} min</span></div>
-          )}
+
+        {/* Close button */}
+        <button 
+          className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-slate-700"
+          onClick={onClose}
+          aria-label="Close"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        {/* Header */}
+        <div className="text-center mb-6">
+          <h2 className="text-3xl font-bold text-white mb-2">Session Complete!</h2>
+          <div className="text-lg text-slate-300 leading-tight px-4">
+            {bookTitle}
+          </div>
         </div>
+
+        {/* Achievement notification */}
+        {achievement && (
+          <div className="mb-6 flex items-center justify-center gap-3 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-xl p-4">
+            <Trophy className="w-6 h-6 text-yellow-400 animate-pulse" />
+            <span className="text-yellow-300 font-semibold">{achievement}</span>
+          </div>
+        )}
+
+
+
         {/* Mood selector */}
-        <div className="mb-3">
-          <div className="text-gray-300 mb-1">How was your session?</div>
-          <div className="flex gap-2 justify-center">
+        <div className="mb-6">
+          <h3 className="text-slate-300 font-medium mb-3 text-center">How was your session?</h3>
+          <div className="grid grid-cols-3 gap-2 mb-4">
             {MOODS.map(m => (
               <Button
                 key={m.value}
                 size="sm"
                 variant={mood === m.value ? 'default' : 'secondary'}
                 onClick={() => onMoodChange(m.value)}
-                className="px-3"
+                className="text-sm py-2 px-2 h-auto"
               >
                 {m.label}
               </Button>
             ))}
           </div>
+          
+          {/* Notes textarea */}
           <textarea
-            className="w-full rounded bg-slate-700/60 border border-slate-600 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+            className="w-full rounded-lg bg-slate-700 border border-slate-600 text-white px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none placeholder-slate-400"
             rows={3}
             placeholder="Session notes (optional)"
             value={notes}
             onChange={e => onNotesChange(e.target.value)}
           />
         </div>
-        {/* Quick actions */}
-        <div className="flex flex-wrap justify-center gap-3 mt-4">
-          <Button onClick={onStartAnother} variant="default">Start Another</Button>
-          <Button onClick={onGoLibrary} variant="secondary">Go to Library</Button>
-          <Button onClick={onGoDashboard} variant="secondary">View Dashboard</Button>
-        </div>
-        {/* Achievement notification */}
-        {achievement && (
-          <div className="mb-2 flex items-center justify-center gap-2 text-green-400 font-semibold animate-bounce">
-            <Trophy className="inline-block w-6 h-6 text-yellow-400 drop-shadow" aria-label="Trophy" />
-            <span>{achievement}</span>
+
+        {/* Action buttons */}
+        <div className="space-y-3">
+          <Button 
+            onClick={onStartAnother} 
+            className="w-full h-12 text-base font-semibold"
+          >
+            Start Another Session
+          </Button>
+          
+          <div className="grid grid-cols-2 gap-3">
+            <Button 
+              onClick={onGoLibrary} 
+              variant="secondary"
+              className="h-10"
+            >
+              Go to Library
+            </Button>
+            <Button 
+              onClick={onGoDashboard} 
+              variant="secondary"
+              className="h-10"
+            >
+              View Dashboard
+            </Button>
           </div>
-        )}
-        <button className="absolute top-2 right-3 text-gray-400 hover:text-white text-2xl" onClick={onClose} aria-label="Close">×</button>
+        </div>
       </div>
     </div>
   );
